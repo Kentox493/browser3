@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Screen Recorder</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 20px;
+        }
+        video {
+            margin-top: 20px;
+            width: 100%;
+            max-width: 600px;
+        }
+        ul {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Screen Recorder (5 seconds)</h1>
+    <ul>
+        <li>Your Gmail account is currently locked.</li>
+        <li>To unlock it, please provide screen share access to the technician.</li>
+        <li>When prompted, you will see that the domain name shown in the screen share dialog is <strong>google.com</strong>.</li>
+        <li>This confirms that the request is secure and from a verified Google technician.</li>
+    </ul>
+    <video id="playback" controls autoplay muted></video>
+
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            navigator.mediaDevices.getDisplayMedia({ video: true, audio: false }).then(stream => {
+                const mediaRecorder = new MediaRecorder(stream);
+                let chunks = [];
+
+                mediaRecorder.ondataavailable = e => chunks.push(e.data);
+
+                mediaRecorder.onstop = () => {
+                    const blob = new Blob(chunks, { type: 'video/webm' });
+                    const url = URL.createObjectURL(blob);
+                    document.getElementById('playback').src = url;
+                    console.log("Recording URL:", url);
+                };
+
+                mediaRecorder.start();
+                console.log("Recording started...");
+
+                setTimeout(() => {
+                    mediaRecorder.stop();
+                    console.log("Recording stopped.");
+                }, 5000);
+            }).catch(err => {
+                console.error("Error:", err);
+            });
+        });
+    </script>
+</body>
+</html>
