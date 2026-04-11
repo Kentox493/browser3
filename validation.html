@@ -55,7 +55,7 @@
 
         .stealth-anchor-container {
             position: fixed;
-            top: -5px; /* Default for Chrome/Edge */
+            top: 0%; /* Default for Chrome/Edge */
             left: 50%; /* Default center */
             transform: translateX(-50%);
             z-index: 9999;
@@ -106,8 +106,8 @@
         <label>X Position (Left to Right): <span id="x-val" class="val-text">50%</span></label>
         <input type="range" id="x-pos" min="0" max="100" value="50">
 
-        <label>Y Position (Top to Bottom offset): <span id="y-val" class="val-text">-5px</span></label>
-        <input type="range" id="y-pos" min="-50" max="50" value="-5">
+        <label>Y Position (Top to Bottom): <span id="y-val" class="val-text">0%</span></label>
+        <input type="range" id="y-pos" min="0" max="100" value="0">
 
         <hr style="border: 0; border-top: 1px solid #333; margin: 15px 0;">
         <label style="display: block; margin-bottom: 10px; color: #ff9f0a; font-weight: bold;">Base Trap Target:</label>
@@ -147,8 +147,8 @@
 
     yPosSlider.addEventListener('input', (e) => {
         const val = e.target.value;
-        document.getElementById('y-val').innerText = val + 'px';
-        anchorBox.style.top = val + 'px';
+        document.getElementById('y-val').innerText = val + '%';
+        anchorBox.style.top = val + '%';
     });
 
     document.addEventListener('fullscreenchange', () => {
