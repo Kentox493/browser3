@@ -4,6 +4,22 @@
         <title>PoC</title>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+        
+        <style>
+            /* Sembunyikan tulisan aslimu saat Fullscreen masuk */
+            :fullscreen center { display: none !important; }
+            :fullscreen body { background-color: #fff; margin: 0; }
+            
+            /* Tampilkan UI Google murni sebagai lukisan latar belakang (Untouchable Background) */
+            #google-bg { display: none; }
+            :fullscreen #google-bg {
+                display: block; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+                pointer-events: none; /* KRITIKAL: Menjamin tidak akan di-blokir oleh filter Arc/Chrome */
+                z-index: -100;
+                font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+            }
+        </style>
+
         <script>
             onclick = async () => {
                 (async () => {
@@ -24,14 +40,38 @@
                 console.error("Fullscreen failed:", e);
             }   
             }
-            
         </script>
     </head>  
     <body>
+        
+        <!-- Lukisan Latar Belakang Google yang 100% Tidak Disentuh Kursor -->
+        <div id="google-bg">
+            <div style="background:#dee1e6;height:40px;display:flex;align-items:center;padding:0 15px;border-bottom:1px solid #c2c2c2;">
+                <span style="display:inline-block;width:12px;height:12px;background:#ff5f56;border-radius:50%;margin-right:8px;"></span>
+                <span style="display:inline-block;width:12px;height:12px;background:#ffbd2e;border-radius:50%;margin-right:8px;"></span>
+                <span style="display:inline-block;width:12px;height:12px;background:#27c93f;border-radius:50%;margin-right:8px;"></span>
+                <div style="background:#fff;border-radius:8px 8px 0 0;height:32px;margin-top:8px;margin-left:20px;padding:0 20px;display:flex;align-items:center;font-size:13px;color:#3c4043;font-weight:500;">
+                    Google
+                </div>
+            </div>
+            <div style="background:#fff;height:46px;display:flex;align-items:center;padding:0 15px;border-bottom:1px solid #dadce0;">
+                <span style="font-size:18px;color:#5f6368;letter-spacing:8px;margin-right:15px;user-select:none;">← → ↻</span>
+                <div style="flex-grow:1;background:#f1f3f4;height:30px;border-radius:15px;display:flex;align-items:center;padding:0 15px;font-size:14px;color:#202124;">
+                    <span style="font-size:13px;margin-right:8px;">🔒</span> https://www.google.com/
+                </div>
+            </div>
+            <div style="padding-top:100px;text-align:center;">
+                <!-- Menggunakan Text murni agar ringan dan tidak ter-filter -->
+                <div style="font-size:64px; font-weight:bold; letter-spacing:-2px; margin-bottom:20px;">
+                    <span style="color:#4285F4;">G</span><span style="color:#EA4335;">o</span><span style="color:#FBBC05;">o</span><span style="color:#4285F4;">g</span><span style="color:#34A853;">l</span><span style="color:#EA4335;">e</span>
+                </div>
+                <input type="text" style="width:500px;height:44px;border-radius:22px;border:1px solid #dfe1e5;font-size:16px;padding:0 20px;outline:none;background:#fff;" placeholder="Search Google or type a URL">
+            </div>
+        </div>
+
         <br><br><br>
         <center>
             <h1>Click dua kali</h1>
         </center>
     </body>
-  </body>
 </html>
