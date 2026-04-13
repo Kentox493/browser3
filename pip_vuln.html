@@ -97,8 +97,8 @@
     async function openPip() {
       try {
         const pip = await documentPictureInPicture.requestWindow({
-          width: 2500,
-          height: 2500,
+          width: 2000,
+          height: 2000,
         });
         pip.document.body.innerHTML = getBiB();
 
